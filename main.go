@@ -23,7 +23,10 @@ func main() {
 		})
 	})
 
-	e := r.Run(":7235")
+	r.POST("/checklist", func(c *gin.Context) {
+	})
+
+	e := r.Run()
 
 	if e != nil {
 		panic(e)
