@@ -1,7 +1,8 @@
 # Checklist API
 
 ## Description
-This is the api for the checklist app. Currently under local development, no authorization in place.
+This is the api for the checklist app, written in Go, using the Gin Web Framework. 
+Currently under local development, no authorization in place.
 
 ## Routes
 
