@@ -11,6 +11,8 @@ func main() {
 
 	r.GET("/checklist/:id", getChecklist)
 	r.POST("/checklist", postChecklist)
+	r.POST("/checklist/:id/item", postItem)
+	r.PUT("/checklist/:id/item/:itemID", putItem)
 
 	e := r.Run()
 
@@ -37,5 +39,31 @@ func getChecklist(c *gin.Context) {
 func postChecklist(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "Checklist created",
+	})
+}
+
+func postItem(c *gin.Context) {
+	checklistID, _ := strconv.Atoi(c.Param("id"))
+	item := item{
+		Text:    c.PostForm("text"),
+		Checked: false,
+	}
+	list, ok := checklists[checklistID]
+	if ok {
+		list.Items = append(list.Items, item)
+		checklists[checklistID] = list
+		c.JSON(200, gin.H{
+			"message": "Item added",
+		})
+	} else {
+		c.JSON(404, gin.H{
+			"message": "Could not add item",
+		})
+	}
+}
+
+func putItem(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "Item updated",
 	})
 }
