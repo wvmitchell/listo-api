@@ -63,7 +63,33 @@ func postItem(c *gin.Context) {
 }
 
 func putItem(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "Item updated",
-	})
+	checklistID, _ := strconv.Atoi(c.Param("id"))
+	itemID, _ := strconv.Atoi(c.Param("itemID"))
+	updatedItem := item{
+		Text:    c.PostForm("text"),
+		Checked: c.GetBool("checked"),
+	}
+
+	list, ok := checklists[checklistID]
+
+	updated := false
+	if ok {
+		for i, item := range list.Items {
+			if item.ID == itemID {
+				list.Items[i] = updatedItem
+				updated = true
+			}
+		}
+	}
+
+	if updated {
+		checklists[checklistID] = list
+		c.JSON(200, gin.H{
+			"message": "Item updated",
+		})
+	} else {
+		c.JSON(400, gin.H{
+			"message": "No item found to update",
+		})
+	}
 }

@@ -2,6 +2,7 @@
 package main
 
 type item struct {
+	ID      int    `json:"id"`
 	Text    string `json:"text"`
 	Checked bool   `json:"checked"`
 }
@@ -19,9 +20,9 @@ var checklists = map[int]checklist{
 		UserID: 1,
 		Name:   "Grocery Shopping",
 		Items: []item{
-			{Text: "Buy milk", Checked: false},
-			{Text: "Buy bread", Checked: true},
-			{Text: "Buy eggs", Checked: false},
+			{ID: 1, Text: "Buy milk", Checked: false},
+			{ID: 2, Text: "Buy bread", Checked: true},
+			{ID: 3, Text: "Buy eggs", Checked: false},
 		},
 	},
 	2: {
@@ -29,9 +30,9 @@ var checklists = map[int]checklist{
 		UserID: 2,
 		Name:   "Work Tasks",
 		Items: []item{
-			{Text: "Complete report", Checked: true},
-			{Text: "Email client", Checked: false},
-			{Text: "Update website", Checked: true},
+			{ID: 4, Text: "Complete report", Checked: true},
+			{ID: 5, Text: "Email client", Checked: false},
+			{ID: 6, Text: "Update website", Checked: true},
 		},
 	},
 	3: {
@@ -39,9 +40,9 @@ var checklists = map[int]checklist{
 		UserID: 1,
 		Name:   "Daily Routine",
 		Items: []item{
-			{Text: "Exercise", Checked: false},
-			{Text: "Read a book", Checked: true},
-			{Text: "Meditate", Checked: false},
+			{ID: 7, Text: "Exercise", Checked: false},
+			{ID: 8, Text: "Read a book", Checked: true},
+			{ID: 9, Text: "Meditate", Checked: false},
 		},
 	},
 	4: {
@@ -49,9 +50,9 @@ var checklists = map[int]checklist{
 		UserID: 3,
 		Name:   "Weekend Plans",
 		Items: []item{
-			{Text: "Visit parents", Checked: false},
-			{Text: "Go hiking", Checked: true},
-			{Text: "Watch a movie", Checked: false},
+			{ID: 10, Text: "Visit parents", Checked: false},
+			{ID: 11, Text: "Go hiking", Checked: true},
+			{ID: 12, Text: "Watch a movie", Checked: false},
 		},
 	},
 	5: {
@@ -59,9 +60,9 @@ var checklists = map[int]checklist{
 		UserID: 2,
 		Name:   "Project A",
 		Items: []item{
-			{Text: "Design UI", Checked: false},
-			{Text: "Write code", Checked: true},
-			{Text: "Test features", Checked: false},
+			{ID: 13, Text: "Design UI", Checked: false},
+			{ID: 14, Text: "Write code", Checked: true},
+			{ID: 15, Text: "Test features", Checked: false},
 		},
 	},
 }
