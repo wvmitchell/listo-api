@@ -6,7 +6,6 @@ Currently under local development, no authorization in place.
 
 ## Routes
 
-- `GET /checklists` - Get all checklists
 - `GET /checklists/:id` - Get a single checklist
 - `POST /checklists` - Create a new Checklist
 - `POST /checklists/:id/items` - Create a new item for a checklist
