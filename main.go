@@ -37,9 +37,25 @@ func getChecklist(c *gin.Context) {
 }
 
 func postChecklist(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "Checklist created",
-	})
+	userID, _ := strconv.Atoi(c.PostForm("userID"))
+	checklist := checklist{
+		ID:     len(checklists) + 1,
+		UserID: userID,
+		Name:   c.PostForm("name"),
+		Items:  []item{},
+	}
+
+	if checklist.Name == "" {
+		c.JSON(400, gin.H{
+			"message": "Name is required",
+		})
+	} else {
+		checklists[checklist.ID] = checklist
+		c.JSON(200, gin.H{
+			"message":   "Checklist created",
+			"checklist": checklist,
+		})
+	}
 }
 
 func postItem(c *gin.Context) {
@@ -67,7 +83,7 @@ func putItem(c *gin.Context) {
 	itemID, _ := strconv.Atoi(c.Param("itemID"))
 	updatedItem := item{
 		Text:    c.PostForm("text"),
-		Checked: c.GetBool("checked"),
+		Checked: c.PostForm("checked") == "true",
 	}
 
 	list, ok := checklists[checklistID]
@@ -76,7 +92,8 @@ func putItem(c *gin.Context) {
 	if ok {
 		for i, item := range list.Items {
 			if item.ID == itemID {
-				list.Items[i] = updatedItem
+				list.Items[i].Checked = updatedItem.Checked
+				list.Items[i].Text = updatedItem.Text
 				updated = true
 			}
 		}
@@ -85,7 +102,8 @@ func putItem(c *gin.Context) {
 	if updated {
 		checklists[checklistID] = list
 		c.JSON(200, gin.H{
-			"message": "Item updated",
+			"message":     "Item updated",
+			"updatedItem": updatedItem,
 		})
 	} else {
 		c.JSON(400, gin.H{
