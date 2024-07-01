@@ -9,6 +9,8 @@ import (
 func main() {
 	r := gin.Default()
 
+	r.Use(CORSMiddleware())
+
 	r.GET("/checklist/:id", getChecklist)
 	r.POST("/checklist", postChecklist)
 	r.POST("/checklist/:id/item", postItem)
