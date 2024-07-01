@@ -100,7 +100,6 @@ func putItem(c *gin.Context) {
 		for i, item := range list.Items {
 			if item.ID == itemID {
 				list.Items[i].Checked = updatedItem.Checked
-				list.Items[i].Text = updatedItem.Text
 				updated = true
 			}
 		}
