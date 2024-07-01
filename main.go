@@ -38,11 +38,11 @@ func getChecklist(c *gin.Context) {
 
 func postChecklist(c *gin.Context) {
 	userID, _ := strconv.Atoi(c.PostForm("userID"))
-	checklist := checklist{
+	checklist := Checklist{
 		ID:     len(checklists) + 1,
 		UserID: userID,
 		Name:   c.PostForm("name"),
-		Items:  []item{},
+		Items:  []ChecklistItem{},
 	}
 
 	if checklist.Name == "" {
@@ -60,7 +60,7 @@ func postChecklist(c *gin.Context) {
 
 func postItem(c *gin.Context) {
 	checklistID, _ := strconv.Atoi(c.Param("id"))
-	item := item{
+	item := ChecklistItem{
 		Text:    c.PostForm("text"),
 		Checked: false,
 	}
@@ -81,9 +81,14 @@ func postItem(c *gin.Context) {
 func putItem(c *gin.Context) {
 	checklistID, _ := strconv.Atoi(c.Param("id"))
 	itemID, _ := strconv.Atoi(c.Param("itemID"))
-	updatedItem := item{
-		Text:    c.PostForm("text"),
-		Checked: c.PostForm("checked") == "true",
+
+	var updatedItem ChecklistItem
+
+	if err := c.BindJSON(&updatedItem); err != nil {
+		c.JSON(400, gin.H{
+			"message": "Invalid request",
+		})
+		return
 	}
 
 	list, ok := checklists[checklistID]
