@@ -1,5 +1,5 @@
-// Package main	is the entry point of the application.
-package main
+// Package models provides the data models for the application.
+package models
 
 // ChecklistItem is a single item in a checklist.
 type ChecklistItem struct {
@@ -16,7 +16,8 @@ type Checklist struct {
 	Items  []ChecklistItem `json:"items"`
 }
 
-var checklists = map[int]Checklist{
+// Checklists is the dummy data for the application.
+var Checklists = map[int]Checklist{
 	1: {
 		ID:     1,
 		UserID: 1,
@@ -32,9 +33,9 @@ var checklists = map[int]Checklist{
 		UserID: 2,
 		Name:   "Work Tasks",
 		Items: []ChecklistItem{
-			{ID: 4, Text: "Complete report", Checked: true},
-			{ID: 5, Text: "Email client", Checked: false},
-			{ID: 6, Text: "Update website", Checked: true},
+			{ID: 1, Text: "Complete report", Checked: true},
+			{ID: 2, Text: "Email client", Checked: false},
+			{ID: 3, Text: "Update website", Checked: true},
 		},
 	},
 	3: {
@@ -42,9 +43,9 @@ var checklists = map[int]Checklist{
 		UserID: 1,
 		Name:   "Daily Routine",
 		Items: []ChecklistItem{
-			{ID: 7, Text: "Exercise", Checked: false},
-			{ID: 8, Text: "Read a book", Checked: true},
-			{ID: 9, Text: "Meditate", Checked: false},
+			{ID: 1, Text: "Exercise", Checked: false},
+			{ID: 2, Text: "Read a book", Checked: true},
+			{ID: 3, Text: "Meditate", Checked: false},
 		},
 	},
 	4: {
@@ -52,9 +53,9 @@ var checklists = map[int]Checklist{
 		UserID: 3,
 		Name:   "Weekend Plans",
 		Items: []ChecklistItem{
-			{ID: 10, Text: "Visit parents", Checked: false},
-			{ID: 11, Text: "Go hiking", Checked: true},
-			{ID: 12, Text: "Watch a movie", Checked: false},
+			{ID: 1, Text: "Visit parents", Checked: false},
+			{ID: 2, Text: "Go hiking", Checked: true},
+			{ID: 3, Text: "Watch a movie", Checked: false},
 		},
 	},
 	5: {
@@ -62,9 +63,9 @@ var checklists = map[int]Checklist{
 		UserID: 2,
 		Name:   "Project A",
 		Items: []ChecklistItem{
-			{ID: 13, Text: "Design UI", Checked: false},
-			{ID: 14, Text: "Write code", Checked: true},
-			{ID: 15, Text: "Test features", Checked: false},
+			{ID: 1, Text: "Design UI", Checked: false},
+			{ID: 2, Text: "Write code", Checked: true},
+			{ID: 3, Text: "Test features", Checked: false},
 		},
 	},
 }

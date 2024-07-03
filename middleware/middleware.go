@@ -1,5 +1,5 @@
-// Package main is the entry point of the application.
-package main
+// Package middleware provides the middleware for the application.
+package middleware
 
 import (
 	"github.com/gin-gonic/gin"
