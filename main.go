@@ -2,12 +2,16 @@
 package main
 
 import (
+	"checklist-api/db/migrate"
 	"checklist-api/middleware"
 	"checklist-api/routehandlers"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	// Run the migrations
+	migrate.RunMigrations()
+
 	r := gin.Default()
 
 	r.Use(middleware.CORSMiddleware())
