@@ -4,9 +4,9 @@ package routehandlers
 import (
 	"checklist-api/db"
 	"checklist-api/models"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	//"strconv"
 	"time"
 )
 
@@ -35,43 +35,64 @@ func GetChecklists(c *gin.Context) {
 	}
 }
 
-//// GetChecklist returns a single checklist.
-//func GetChecklist(c *gin.Context) {
-//	id, _ := strconv.Atoi(c.Param("id"))
-//	list, ok := models.Checklists[id]
-//
-//	if ok {
-//		c.JSON(200, gin.H{
-//			"checklist": list,
-//		})
-//	} else {
-//		c.JSON(404, gin.H{
-//			"message": "Checklist not found",
-//		})
-//	}
-//}
+// GetChecklist returns a single checklist and items.
+func GetChecklist(c *gin.Context) {
+	userID := c.GetHeader("userID")
+	id := c.Param("id")
+
+	fmt.Println("userID: ", userID)
+	fmt.Println("id: ", id)
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	checklist, checklistErr := service.GetChecklist(userID, id)
+	items, itemsErr := service.GetChecklistItems(userID, id)
+
+	if checklistErr != nil {
+		c.JSON(400, gin.H{
+			"message": "Error getting checklist: " + checklistErr.Error(),
+		})
+	} else if itemsErr != nil {
+		c.JSON(400, gin.H{
+			"message": "Error getting items: " + itemsErr.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"checklist": checklist,
+			"items":     items,
+		})
+	}
+}
 
 // PostChecklist creates a new checklist.
 func PostChecklist(c *gin.Context) {
 	service, err := db.NewDynamoDBService()
 	userID := c.GetHeader("userID")
-	checklist := models.Checklist{
-		ID:            uuid.New().String(),
-		UserID:        userID,
-		Name:          c.PostForm("name"),
-		Collaborators: []string{},
-		Timestamp:     time.Now().Format(time.RFC3339),
-	}
+	var checklist models.Checklist
 
 	if err != nil {
 		c.JSON(500, gin.H{
-			"message": "Error creating checklist: " + err.Error(),
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	if err := c.BindJSON(&checklist); err != nil {
+		c.JSON(400, gin.H{
+			"message": "Invalid request: " + err.Error(),
 		})
 	} else if checklist.Name == "" {
 		c.JSON(400, gin.H{
 			"message": "Name is required",
 		})
 	} else {
+		checklist.ID = uuid.New().String()
+		checklist.Timestamp = time.Now().Format(time.RFC3339)
 		err := service.CreateChecklist(userID, &checklist)
 
 		if err != nil {
@@ -88,67 +109,73 @@ func PostChecklist(c *gin.Context) {
 }
 
 // PostItem adds an item to a checklist.
-//func PostItem(c *gin.Context) {
-//	checklistID, _ := strconv.Atoi(c.Param("id"))
-//	var newItem models.ChecklistItem
-//
-//	if err := c.BindJSON(&newItem); err != nil {
-//		c.JSON(400, gin.H{
-//			"message": "Invalid request",
-//		})
-//		return
-//	}
-//
-//	list, ok := models.Checklists[checklistID]
-//	if ok {
-//		newItem.ID = len(list.Items) + 1
-//		list.Items = append(list.Items, newItem)
-//		models.Checklists[checklistID] = list
-//		c.JSON(200, gin.H{
-//			"message": "Item added",
-//		})
-//	} else {
-//		c.JSON(404, gin.H{
-//			"message": "Could not add item",
-//		})
-//	}
-//}
-//
-//// PutItem updates an item in a checklist.
-//func PutItem(c *gin.Context) {
-//	checklistID, _ := strconv.Atoi(c.Param("id"))
-//	itemID, _ := strconv.Atoi(c.Param("itemID"))
-//
-//	var updatedItem models.ChecklistItem
-//
-//	if err := c.BindJSON(&updatedItem); err != nil {
-//		c.JSON(400, gin.H{
-//			"message": "Invalid request",
-//		})
-//		return
-//	}
-//
-//	list, ok := models.Checklists[checklistID]
-//
-//	updated := false
-//	if ok {
-//		for i, item := range list.Items {
-//			if item.ID == itemID {
-//				list.Items[i].Checked = updatedItem.Checked
-//				updated = true
-//			}
-//		}
-//	}
-//
-//	if updated {
-//		models.Checklists[checklistID] = list
-//		c.JSON(200, gin.H{
-//			"message":     "Item updated",
-//			"updatedItem": updatedItem,
-//		})
-//	} else {
-//		c.JSON(400, gin.H{
-//			"message": "No item found to update",
-//		})
-//	}
-//}
+func PostItem(c *gin.Context) {
+	userID := c.GetHeader("userID")
+	checklistID := c.Param("id")
+	var newItem models.ChecklistItem
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	} else if err := c.BindJSON(&newItem); err != nil {
+		c.JSON(400, gin.H{
+			"message": "Invalid request: " + err.Error(),
+		})
+	} else {
+		newItem.ID = uuid.New().String()
+		newItem.Checked = false
+
+		err := service.CreateChecklistItem(userID, checklistID, &newItem)
+
+		if err != nil {
+			c.JSON(500, gin.H{
+				"message": "Error creating item: " + err.Error(),
+			})
+		} else {
+			c.JSON(200, gin.H{
+				"message": "Item created",
+				"item":    newItem,
+			})
+		}
+	}
+}
+
+// PutItem updates an item in a checklist.
+func PutItem(c *gin.Context) {
+	userID := c.GetHeader("userID")
+	checklistID := c.Param("id")
+	itemID := c.Param("itemID")
+
+	var updatedItem models.ChecklistItem
+
+	if err := c.BindJSON(&updatedItem); err != nil {
+		c.JSON(400, gin.H{
+			"message": "Invalid request",
+		})
+		return
+	}
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	err = service.UpdateChecklistItem(userID, checklistID, itemID, &updatedItem)
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error updating item: " + err.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"message": "Item updated",
+		})
+	}
+}

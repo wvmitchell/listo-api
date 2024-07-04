@@ -3,18 +3,17 @@ package models
 
 // Checklist is a collection of ChecklistItems.
 type Checklist struct {
-	ID            string `json:"id"`
-	UserID        string `json:"userID"`
-	Name          string    `json:"name"`
-	Collaborators []string  `json:"collaborators"`
-	Timestamp     string     `json:"timestamp"`
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	Collaborators []string `json:"collaborators"`
+	Timestamp     string   `json:"timestamp"`
 }
 
-// Item is a single item in a checklist.
-type Item struct {
+// ChecklistItem is a single item in a checklist.
+type ChecklistItem struct {
 	ID      string `json:"id"`
-	Text    string    `json:"text"`
-	Checked bool      `json:"checked"`
+	Content string `json:"content"`
+	Checked bool   `json:"checked"`
 }
 
 // Checklists is the dummy data for the application.

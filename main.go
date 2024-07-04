@@ -10,21 +10,25 @@ import (
 
 func main() {
 	// Run the migrations
-	migrate.RunMigrations()
+	err := migrate.RunMigrations()
+
+	if err != nil {
+		panic(err)
+	}
 
 	r := gin.Default()
 
 	r.Use(middleware.CORSMiddleware())
 
 	r.GET("/checklists", routehandlers.GetChecklists)
-	//r.GET("/checklist/:id", routehandlers.GetChecklist)
+	r.GET("/checklist/:id", routehandlers.GetChecklist)
 	r.POST("/checklist", routehandlers.PostChecklist)
-	//r.POST("/checklist/:id/item", routehandlers.PostItem)
-	//r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
+	r.POST("/checklist/:id/item", routehandlers.PostItem)
+	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
 
-	e := r.Run()
+	err = r.Run()
 
-	if e != nil {
-		panic(e)
+	if err != nil {
+		panic(err)
 	}
 }
