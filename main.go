@@ -16,11 +16,11 @@ func main() {
 
 	r.Use(middleware.CORSMiddleware())
 
-	r.GET("/checklists", routehandlers.GetChecklists)
-	r.GET("/checklist/:id", routehandlers.GetChecklist)
+	//r.GET("/checklists", routehandlers.GetChecklists)
+	//r.GET("/checklist/:id", routehandlers.GetChecklist)
 	r.POST("/checklist", routehandlers.PostChecklist)
-	r.POST("/checklist/:id/item", routehandlers.PostItem)
-	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
+	//r.POST("/checklist/:id/item", routehandlers.PostItem)
+	//r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
 
 	e := r.Run()
 
