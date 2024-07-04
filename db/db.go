@@ -84,3 +84,40 @@ func (d *DynamoDBService) CreateChecklist(userID string, checklist *models.Check
 
 	return nil
 }
+
+// GetChecklists retrieves all checklists for a user.
+func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, error) {
+	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("Checklists"),
+		KeyConditionExpression: aws.String("PK = :pk"),
+		FilterExpression:       aws.String("Entity = :entity"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk":     &types.AttributeValueMemberS{Value: "USER#" + userID},
+			":entity": &types.AttributeValueMemberS{Value: "CHECKLIST"},
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query table, %v", err)
+	}
+
+	var checklists []models.Checklist
+	for _, item := range output.Items {
+		collaborators := []string{}
+
+		for _, c := range item["Collaborators"].(*types.AttributeValueMemberL).Value {
+			collaborators = append(collaborators, c.(*types.AttributeValueMemberS).Value)
+		}
+
+		checklist := models.Checklist{
+			ID:            item["SK"].(*types.AttributeValueMemberS).Value,
+			Name:          item["Name"].(*types.AttributeValueMemberS).Value,
+			Collaborators: collaborators,
+			Timestamp:     item["Timestamp"].(*types.AttributeValueMemberS).Value,
+		}
+
+		checklists = append(checklists, checklist)
+	}
+
+	return checklists, nil
+}

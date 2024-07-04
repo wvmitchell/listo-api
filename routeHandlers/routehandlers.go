@@ -11,27 +11,30 @@ import (
 )
 
 // GetChecklists returns all checklists for a user.
-//func GetChecklists(c *gin.Context) {
-//	userID, e := strconv.Atoi(c.GetHeader("userID"))
-//	userChecklists := []models.Checklist{}
-//
-//	for _, list := range models.Checklists {
-//		if list.UserID == userID {
-//			userChecklists = append(userChecklists, list)
-//		}
-//	}
-//
-//	if e != nil {
-//		c.JSON(400, gin.H{
-//			"message": "Invalid user ID",
-//		})
-//	} else {
-//		c.JSON(200, gin.H{
-//			"checklists": userChecklists,
-//		})
-//	}
-//}
-//
+func GetChecklists(c *gin.Context) {
+	userID := c.GetHeader("userID")
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	} else {
+		checklists, err := service.GetChecklists(userID)
+
+		if err != nil {
+			c.JSON(400, gin.H{
+				"message": "Error getting checklists: " + err.Error(),
+			})
+		} else {
+			c.JSON(200, gin.H{
+				"checklists": checklists,
+			})
+		}
+	}
+}
+
 //// GetChecklist returns a single checklist.
 //func GetChecklist(c *gin.Context) {
 //	id, _ := strconv.Atoi(c.Param("id"))
