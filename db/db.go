@@ -28,7 +28,8 @@ func NewDynamoDBService() (*DynamoDBService, error) {
 	}
 
 	svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
-		o.BaseEndpoint = aws.String("http://localhost:8000") // Use local DynamoDB instance for now, later set based on environment
+		// TODO: Set the endpoint based on the environment
+		o.BaseEndpoint = aws.String("http://localhost:8000")
 	})
 
 	return &DynamoDBService{
@@ -88,7 +89,7 @@ func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, erro
 			ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
 			Name:          item["Name"].(*types.AttributeValueMemberS).Value,
 			Collaborators: collaborators,
-			Timestamp:     item["Timestamp"].(*types.AttributeValueMemberS).Value,
+			CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 		}
 
 		checklists = append(checklists, checklist)
@@ -126,7 +127,7 @@ func (d *DynamoDBService) GetChecklist(userID string, checklistID string) (model
 		ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
 		Name:          item["Name"].(*types.AttributeValueMemberS).Value,
 		Collaborators: collaborators,
-		Timestamp:     item["Timestamp"].(*types.AttributeValueMemberS).Value,
+		CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 	}
 
 	return checklist, nil
@@ -153,9 +154,11 @@ func (d *DynamoDBService) GetChecklistItems(userID string, checklistID string) (
 
 	for _, item := range output.Items {
 		checklistItem := models.ChecklistItem{
-			ID:      strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "ITEM#")[1],
-			Content: item["Content"].(*types.AttributeValueMemberS).Value,
-			Checked: item["Checked"].(*types.AttributeValueMemberBOOL).Value,
+			ID:        strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "ITEM#")[1],
+			Content:   item["Content"].(*types.AttributeValueMemberS).Value,
+			Checked:   item["Checked"].(*types.AttributeValueMemberBOOL).Value,
+			CreatedAt: item["CreatedAt"].(*types.AttributeValueMemberS).Value,
+			UpdatedAt: item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 		}
 
 		checklistItems = append(checklistItems, checklistItem)
@@ -179,7 +182,7 @@ func (d *DynamoDBService) CreateChecklist(userID string, checklist *models.Check
 			"Entity":        &types.AttributeValueMemberS{Value: "CHECKLIST"},
 			"Name":          &types.AttributeValueMemberS{Value: checklist.Name},
 			"Collaborators": &types.AttributeValueMemberL{Value: collaborators},
-			"Timestamp":     &types.AttributeValueMemberS{Value: checklist.Timestamp},
+			"CreatedAt":     &types.AttributeValueMemberS{Value: checklist.CreatedAt},
 		},
 	})
 
@@ -195,11 +198,13 @@ func (d *DynamoDBService) CreateChecklistItem(userID string, checklistID string,
 	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String("Checklists"),
 		Item: map[string]types.AttributeValue{
-			"PK":      &types.AttributeValueMemberS{Value: "USER#" + userID},
-			"SK":      &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID + "ITEM#" + item.ID},
-			"Entity":  &types.AttributeValueMemberS{Value: "ITEM"},
-			"Content": &types.AttributeValueMemberS{Value: item.Content},
-			"Checked": &types.AttributeValueMemberBOOL{Value: item.Checked},
+			"PK":        &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"SK":        &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID + "ITEM#" + item.ID},
+			"Entity":    &types.AttributeValueMemberS{Value: "ITEM"},
+			"Content":   &types.AttributeValueMemberS{Value: item.Content},
+			"Checked":   &types.AttributeValueMemberBOOL{Value: item.Checked},
+			"CreatedAt": &types.AttributeValueMemberS{Value: item.CreatedAt},
+			"UpdatedAt": &types.AttributeValueMemberS{Value: item.UpdatedAt},
 		},
 	})
 
@@ -218,16 +223,34 @@ func (d *DynamoDBService) UpdateChecklistItem(userID string, checklistID string,
 			"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID + "ITEM#" + itemID},
 		},
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":content": &types.AttributeValueMemberS{Value: item.Content},
-			":checked": &types.AttributeValueMemberBOOL{Value: item.Checked},
+			":content":   &types.AttributeValueMemberS{Value: item.Content},
+			":checked":   &types.AttributeValueMemberBOOL{Value: item.Checked},
+			":updatedAt": &types.AttributeValueMemberS{Value: item.UpdatedAt},
 		},
 		ConditionExpression: aws.String("attribute_exists(PK) AND attribute_exists(SK)"),
-		UpdateExpression:    aws.String("SET Content = :content, Checked = :checked"),
+		UpdateExpression:    aws.String("SET Content = :content, Checked = :checked, UpdatedAt = :updatedAt"),
 		ReturnValues:        types.ReturnValueAllNew,
 	})
 
 	if err != nil {
 		return fmt.Errorf("failed to update item, %v", err)
+	}
+
+	return nil
+}
+
+// DeleteChecklistItem deletes an item from a checklist.
+func (d *DynamoDBService) DeleteChecklistItem(userID string, checklistID string, itemID string) error {
+	_, err := d.Client.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
+		TableName: aws.String("Checklists"),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID + "ITEM#" + itemID},
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete item, %v", err)
 	}
 
 	return nil

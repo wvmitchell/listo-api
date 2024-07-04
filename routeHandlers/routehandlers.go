@@ -4,7 +4,6 @@ package routehandlers
 import (
 	"checklist-api/db"
 	"checklist-api/models"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"time"
@@ -39,9 +38,6 @@ func GetChecklists(c *gin.Context) {
 func GetChecklist(c *gin.Context) {
 	userID := c.GetHeader("userID")
 	id := c.Param("id")
-
-	fmt.Println("userID: ", userID)
-	fmt.Println("id: ", id)
 
 	service, err := db.NewDynamoDBService()
 
@@ -92,7 +88,7 @@ func PostChecklist(c *gin.Context) {
 		})
 	} else {
 		checklist.ID = uuid.New().String()
-		checklist.Timestamp = time.Now().Format(time.RFC3339)
+		checklist.CreatedAt = time.Now().Format(time.RFC3339)
 		err := service.CreateChecklist(userID, &checklist)
 
 		if err != nil {
@@ -127,6 +123,8 @@ func PostItem(c *gin.Context) {
 	} else {
 		newItem.ID = uuid.New().String()
 		newItem.Checked = false
+		newItem.CreatedAt = time.Now().Format(time.RFC3339)
+		newItem.UpdatedAt = newItem.CreatedAt
 
 		err := service.CreateChecklistItem(userID, checklistID, &newItem)
 
@@ -167,6 +165,7 @@ func PutItem(c *gin.Context) {
 		return
 	}
 
+	updatedItem.UpdatedAt = time.Now().Format(time.RFC3339)
 	err = service.UpdateChecklistItem(userID, checklistID, itemID, &updatedItem)
 
 	if err != nil {
@@ -176,6 +175,34 @@ func PutItem(c *gin.Context) {
 	} else {
 		c.JSON(200, gin.H{
 			"message": "Item updated",
+		})
+	}
+}
+
+// DeleteItem deletes an item from a checklist.
+func DeleteItem(c *gin.Context) {
+	userID := c.GetHeader("userID")
+	checklistID := c.Param("id")
+	itemID := c.Param("itemID")
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	err = service.DeleteChecklistItem(userID, checklistID, itemID)
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error deleting item: " + err.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"message": "Item deleted",
 		})
 	}
 }

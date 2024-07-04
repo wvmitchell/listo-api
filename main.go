@@ -26,6 +26,7 @@ func main() {
 	r.POST("/checklist", routehandlers.PostChecklist)
 	r.POST("/checklist/:id/item", routehandlers.PostItem)
 	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
+	r.DELETE("/checklist/:id/item/:itemID", routehandlers.DeleteItem)
 
 	err = r.Run()
 
