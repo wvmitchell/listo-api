@@ -21,3 +21,21 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// AuthMiddleware is a middleware that checks for the userID header.
+// Note: This is a placeholder for a real authentication middleware.
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetHeader("userID")
+
+		if userID == "" {
+			c.JSON(401, gin.H{
+				"message": "Unauthorized",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

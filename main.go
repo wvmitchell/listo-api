@@ -19,6 +19,7 @@ func main() {
 	r := gin.Default()
 
 	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.AuthMiddleware())
 
 	r.GET("/checklists", routehandlers.GetChecklists)
 	r.GET("/checklist/:id", routehandlers.GetChecklist)
