@@ -4,9 +4,10 @@ package models
 // Checklist is a collection of ChecklistItems.
 type Checklist struct {
 	ID            string   `json:"id"`
-	Name          string   `json:"name"`
+	Title         string   `json:"title"`
 	Collaborators []string `json:"collaborators"`
 	CreatedAt     string   `json:"created_at"`
+	UpdatedAt     string   `json:"updated_at"`
 }
 
 // ChecklistItem is a single item in a checklist.
@@ -15,5 +16,5 @@ type ChecklistItem struct {
 	Content   string `json:"content"`
 	Checked   bool   `json:"checked"`
 	CreatedAt string `json:"created_at"`
-	UpdatedAt  string `json:"update_at"`
+	UpdatedAt string `json:"update_at"`
 }

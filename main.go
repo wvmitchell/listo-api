@@ -23,6 +23,7 @@ func main() {
 
 	r.GET("/checklists", routehandlers.GetChecklists)
 	r.GET("/checklist/:id", routehandlers.GetChecklist)
+	r.PUT("/checklist/:id", routehandlers.PutChecklist)
 	r.POST("/checklist", routehandlers.PostChecklist)
 	r.POST("/checklist/:id/item", routehandlers.PostItem)
 	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)

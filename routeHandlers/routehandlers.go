@@ -58,11 +58,48 @@ func GetChecklist(c *gin.Context) {
 		c.JSON(400, gin.H{
 			"message": "Error getting items: " + itemsErr.Error(),
 		})
+	} else if checklist.ID == "" {
+		c.JSON(404, gin.H{
+			"message": "Checklist does not exist",
+		})
 	} else {
 		c.JSON(200, gin.H{
 			"checklist": checklist,
 			"items":     items,
 		})
+	}
+}
+
+// PutChecklist updates a checklist.
+func PutChecklist(c *gin.Context) {
+	service, err := db.NewDynamoDBService()
+	userID := c.GetHeader("userID")
+	var updatedChecklist models.Checklist
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	if err := c.BindJSON(&updatedChecklist); err != nil {
+		c.JSON(400, gin.H{
+			"message": "Invalid request: " + err.Error(),
+		})
+	} else {
+		updatedChecklist.ID = c.Param("id")
+		updatedChecklist.UpdatedAt = time.Now().Format(time.RFC3339)
+		err := service.UpdateChecklist(userID, updatedChecklist.ID, &updatedChecklist)
+
+		if err != nil {
+			c.JSON(500, gin.H{
+				"message": "Error updating checklist: " + err.Error(),
+			})
+		} else {
+			c.JSON(200, gin.H{
+				"message": "Checklist updated",
+			})
+		}
 	}
 }
 
@@ -82,13 +119,14 @@ func PostChecklist(c *gin.Context) {
 		c.JSON(400, gin.H{
 			"message": "Invalid request: " + err.Error(),
 		})
-	} else if checklist.Name == "" {
+	} else if checklist.Title == "" {
 		c.JSON(400, gin.H{
-			"message": "Name is required",
+			"message": "Title is required",
 		})
 	} else {
 		checklist.ID = uuid.New().String()
 		checklist.CreatedAt = time.Now().Format(time.RFC3339)
+		checklist.UpdatedAt = checklist.CreatedAt
 		err := service.CreateChecklist(userID, &checklist)
 
 		if err != nil {

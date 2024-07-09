@@ -87,7 +87,7 @@ func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, erro
 
 		checklist := models.Checklist{
 			ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
-			Name:          item["Name"].(*types.AttributeValueMemberS).Value,
+			Title:         item["Title"].(*types.AttributeValueMemberS).Value,
 			Collaborators: collaborators,
 			CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 		}
@@ -125,7 +125,7 @@ func (d *DynamoDBService) GetChecklist(userID string, checklistID string) (model
 
 	checklist := models.Checklist{
 		ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
-		Name:          item["Name"].(*types.AttributeValueMemberS).Value,
+		Title:         item["Title"].(*types.AttributeValueMemberS).Value,
 		Collaborators: collaborators,
 		CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 	}
@@ -180,9 +180,10 @@ func (d *DynamoDBService) CreateChecklist(userID string, checklist *models.Check
 			"PK":            &types.AttributeValueMemberS{Value: "USER#" + userID},
 			"SK":            &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklist.ID},
 			"Entity":        &types.AttributeValueMemberS{Value: "CHECKLIST"},
-			"Name":          &types.AttributeValueMemberS{Value: checklist.Name},
+			"Title":         &types.AttributeValueMemberS{Value: checklist.Title},
 			"Collaborators": &types.AttributeValueMemberL{Value: collaborators},
 			"CreatedAt":     &types.AttributeValueMemberS{Value: checklist.CreatedAt},
+			"UpdatedAt":     &types.AttributeValueMemberS{Value: checklist.UpdatedAt},
 		},
 	})
 
@@ -190,6 +191,28 @@ func (d *DynamoDBService) CreateChecklist(userID string, checklist *models.Check
 		return fmt.Errorf("failed to put item, %v", err)
 	}
 
+	return nil
+}
+
+// UpdateChecklist updates a checklist in the database.
+func (d *DynamoDBService) UpdateChecklist(userID string, checklistID string, checklist *models.Checklist) error {
+	_, err := d.Client.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+		TableName: aws.String("Checklists"),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":title":     &types.AttributeValueMemberS{Value: checklist.Title},
+			":updatedAt": &types.AttributeValueMemberS{Value: checklist.UpdatedAt},
+		},
+		ConditionExpression: aws.String("attribute_exists(PK) AND attribute_exists(SK)"),
+		UpdateExpression:    aws.String("SET Title = :title, UpdatedAt = :updatedAt"),
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update item, %v", err)
+	}
 	return nil
 }
 
