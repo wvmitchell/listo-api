@@ -216,6 +216,53 @@ func (d *DynamoDBService) UpdateChecklist(userID string, checklistID string, che
 	return nil
 }
 
+// DeleteChecklist deletes a checklist and all associated items from the database.
+func (d *DynamoDBService) DeleteChecklist(userID string, checklistID string) error {
+	items, err := d.GetChecklistItems(userID, checklistID)
+	if err != nil {
+		return fmt.Errorf("failed to get checklist items, %v", err)
+	}
+
+	if len(items) > 0 {
+		var deleteRequests []types.WriteRequest
+
+		for _, item := range items {
+			deleteRequests = append(deleteRequests, types.WriteRequest{
+				DeleteRequest: &types.DeleteRequest{
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
+						"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID + "ITEM#" + item.ID},
+					},
+				},
+			})
+		}
+
+		_, err = d.Client.BatchWriteItem(context.TODO(), &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]types.WriteRequest{
+				"Checklists": deleteRequests,
+			},
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to delete checklist items, %v", err)
+		}
+	}
+
+	_, err = d.Client.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
+		TableName: aws.String("Checklists"),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete checklist, %v", err)
+	}
+
+	return nil
+}
+
 // CreateChecklistItem creates a new item in a checklist.
 func (d *DynamoDBService) CreateChecklistItem(userID string, checklistID string, item *models.ChecklistItem) error {
 	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{

@@ -142,6 +142,32 @@ func PostChecklist(c *gin.Context) {
 	}
 }
 
+// DeleteChecklist deletes a checklist.
+func DeleteChecklist(c *gin.Context) {
+	userID := c.GetHeader("userID")
+	id := c.Param("id")
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	} else {
+		err := service.DeleteChecklist(userID, id)
+
+		if err != nil {
+			c.JSON(500, gin.H{
+				"message": "Error deleting checklist: " + err.Error(),
+			})
+		} else {
+			c.JSON(200, gin.H{
+				"message": "Checklist deleted",
+			})
+		}
+	}
+}
+
 // PostItem adds an item to a checklist.
 func PostItem(c *gin.Context) {
 	userID := c.GetHeader("userID")
