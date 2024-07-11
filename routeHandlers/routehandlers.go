@@ -244,6 +244,32 @@ func PutItem(c *gin.Context) {
 	}
 }
 
+// PutAllItems updates all items in a checklist. Currently just sets all items to checked/unchecked.
+func PutAllItems(c *gin.Context) {
+	checklistID := c.Param("id")
+	userID := c.GetHeader("userID")
+	checked := c.Query("checked") == "true"
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	err = service.UpdateChecklistItems(userID, checklistID, checked)
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error updating items: " + err.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"message": "Items updated",
+		})
+	}
+}
+
 // DeleteItem deletes an item from a checklist.
 func DeleteItem(c *gin.Context) {
 	userID := c.GetHeader("userID")

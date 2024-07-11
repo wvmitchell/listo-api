@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -307,6 +308,54 @@ func (d *DynamoDBService) UpdateChecklistItem(userID string, checklistID string,
 
 	if err != nil {
 		return fmt.Errorf("failed to update item, %v", err)
+	}
+
+	return nil
+}
+
+// UpdateChecklistItems updates all items in a checklist.
+func (d *DynamoDBService) UpdateChecklistItems(userID string, checklistID string, checked bool) error {
+	items, err := d.GetChecklistItems(userID, checklistID)
+
+	if err != nil {
+		return fmt.Errorf("failed to get checklist items, %v", err)
+	}
+
+	if len(items) == 0 {
+		return nil
+	}
+
+	// TODO: Batch in groups of 50, currently only supports 100 total items
+
+	transactItems := []types.TransactWriteItem{}
+
+	for _, item := range items {
+		item.UpdatedAt = time.Now().Format(time.RFC3339)
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Update: &types.Update{
+				TableName: aws.String("Checklists"),
+				Key: map[string]types.AttributeValue{
+					"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
+					"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID + "ITEM#" + item.ID},
+				},
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":checked":   &types.AttributeValueMemberBOOL{Value: checked},
+					":updatedAt": &types.AttributeValueMemberS{Value: item.UpdatedAt},
+				},
+				ConditionExpression: aws.String("attribute_exists(PK) AND attribute_exists(SK)"),
+				UpdateExpression:    aws.String("SET Checked = :checked, UpdatedAt = :updatedAt"),
+			},
+		})
+	}
+
+	input := &dynamodb.TransactWriteItemsInput{
+		TransactItems: transactItems,
+	}
+
+	_, err = d.Client.TransactWriteItems(context.TODO(), input)
+
+	if err != nil {
+		return fmt.Errorf("failed to update items, %v", err)
 	}
 
 	return nil
