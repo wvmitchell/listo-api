@@ -126,6 +126,7 @@ func (d *DynamoDBService) GetChecklist(userID string, checklistID string) (model
 	checklist := models.Checklist{
 		ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
 		Title:         item["Title"].(*types.AttributeValueMemberS).Value,
+		Locked:        item["Locked"].(*types.AttributeValueMemberBOOL).Value,
 		Collaborators: collaborators,
 		CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 	}
@@ -181,6 +182,7 @@ func (d *DynamoDBService) CreateChecklist(userID string, checklist *models.Check
 			"SK":            &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklist.ID},
 			"Entity":        &types.AttributeValueMemberS{Value: "CHECKLIST"},
 			"Title":         &types.AttributeValueMemberS{Value: checklist.Title},
+			"Locked":        &types.AttributeValueMemberBOOL{Value: checklist.Locked},
 			"Collaborators": &types.AttributeValueMemberL{Value: collaborators},
 			"CreatedAt":     &types.AttributeValueMemberS{Value: checklist.CreatedAt},
 			"UpdatedAt":     &types.AttributeValueMemberS{Value: checklist.UpdatedAt},
@@ -204,10 +206,11 @@ func (d *DynamoDBService) UpdateChecklist(userID string, checklistID string, che
 		},
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":title":     &types.AttributeValueMemberS{Value: checklist.Title},
+			":locked":    &types.AttributeValueMemberBOOL{Value: checklist.Locked},
 			":updatedAt": &types.AttributeValueMemberS{Value: checklist.UpdatedAt},
 		},
 		ConditionExpression: aws.String("attribute_exists(PK) AND attribute_exists(SK)"),
-		UpdateExpression:    aws.String("SET Title = :title, UpdatedAt = :updatedAt"),
+		UpdateExpression:    aws.String("SET Title = :title, Locked = :locked, UpdatedAt = :updatedAt"),
 	})
 
 	if err != nil {

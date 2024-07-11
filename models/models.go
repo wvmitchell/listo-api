@@ -5,6 +5,7 @@ package models
 type Checklist struct {
 	ID            string   `json:"id"`
 	Title         string   `json:"title"`
+	Locked        bool     `json:"locked"`
 	Collaborators []string `json:"collaborators"`
 	CreatedAt     string   `json:"created_at"`
 	UpdatedAt     string   `json:"updated_at"`

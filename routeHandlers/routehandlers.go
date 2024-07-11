@@ -125,6 +125,7 @@ func PostChecklist(c *gin.Context) {
 		})
 	} else {
 		checklist.ID = uuid.New().String()
+		checklist.Locked = false
 		checklist.CreatedAt = time.Now().Format(time.RFC3339)
 		checklist.UpdatedAt = checklist.CreatedAt
 		err := service.CreateChecklist(userID, &checklist)
