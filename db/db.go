@@ -78,7 +78,7 @@ func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, erro
 		return nil, fmt.Errorf("failed to query table, %v", err)
 	}
 
-	var checklists []models.Checklist
+	checklists := []models.Checklist{}
 	for _, item := range output.Items {
 		collaborators := []string{}
 
