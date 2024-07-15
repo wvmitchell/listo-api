@@ -156,7 +156,7 @@ func (d *DynamoDBService) GetChecklistItems(userID string, checklistID string) (
 	checklistItems := []models.ChecklistItem{}
 
 	for _, item := range output.Items {
-		orderVal, err := strconv.Atoi(item["Order"].(*types.AttributeValueMemberN).Value)
+		orderingVal, err := strconv.Atoi(item["Ordering"].(*types.AttributeValueMemberN).Value)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse order for item")
 		}
@@ -165,7 +165,7 @@ func (d *DynamoDBService) GetChecklistItems(userID string, checklistID string) (
 			ID:        strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "ITEM#")[1],
 			Content:   item["Content"].(*types.AttributeValueMemberS).Value,
 			Checked:   item["Checked"].(*types.AttributeValueMemberBOOL).Value,
-			Order:     orderVal,
+			Ordering:  orderingVal,
 			CreatedAt: item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 			UpdatedAt: item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 		}
@@ -284,7 +284,7 @@ func (d *DynamoDBService) CreateChecklistItem(userID string, checklistID string,
 			"Entity":    &types.AttributeValueMemberS{Value: "ITEM"},
 			"Content":   &types.AttributeValueMemberS{Value: item.Content},
 			"Checked":   &types.AttributeValueMemberBOOL{Value: item.Checked},
-			"Order":     &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", item.Order)},
+			"Ordering":  &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", item.Ordering)},
 			"CreatedAt": &types.AttributeValueMemberS{Value: item.CreatedAt},
 			"UpdatedAt": &types.AttributeValueMemberS{Value: item.UpdatedAt},
 		},
@@ -307,10 +307,11 @@ func (d *DynamoDBService) UpdateChecklistItem(userID string, checklistID string,
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":content":   &types.AttributeValueMemberS{Value: item.Content},
 			":checked":   &types.AttributeValueMemberBOOL{Value: item.Checked},
+			":ordering":  &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", item.Ordering)},
 			":updatedAt": &types.AttributeValueMemberS{Value: item.UpdatedAt},
 		},
 		ConditionExpression: aws.String("attribute_exists(PK) AND attribute_exists(SK)"),
-		UpdateExpression:    aws.String("SET Content = :content, Checked = :checked, UpdatedAt = :updatedAt"),
+		UpdateExpression:    aws.String("SET Content = :content, Checked = :checked, Ordering = :ordering, UpdatedAt = :updatedAt"),
 		ReturnValues:        types.ReturnValueAllNew,
 	})
 

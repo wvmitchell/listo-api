@@ -16,7 +16,7 @@ type ChecklistItem struct {
 	ID        string `json:"id"`
 	Content   string `json:"content"`
 	Checked   bool   `json:"checked"`
-	Order     int    `json:"order"`
+	Ordering  int    `json:"ordering"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"update_at"`
 }
