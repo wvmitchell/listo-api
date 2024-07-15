@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -155,10 +156,16 @@ func (d *DynamoDBService) GetChecklistItems(userID string, checklistID string) (
 	checklistItems := []models.ChecklistItem{}
 
 	for _, item := range output.Items {
+		orderVal, err := strconv.Atoi(item["Order"].(*types.AttributeValueMemberN).Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse order for item")
+		}
+
 		checklistItem := models.ChecklistItem{
 			ID:        strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "ITEM#")[1],
 			Content:   item["Content"].(*types.AttributeValueMemberS).Value,
 			Checked:   item["Checked"].(*types.AttributeValueMemberBOOL).Value,
+			Order:     orderVal,
 			CreatedAt: item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 			UpdatedAt: item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 		}
@@ -277,6 +284,7 @@ func (d *DynamoDBService) CreateChecklistItem(userID string, checklistID string,
 			"Entity":    &types.AttributeValueMemberS{Value: "ITEM"},
 			"Content":   &types.AttributeValueMemberS{Value: item.Content},
 			"Checked":   &types.AttributeValueMemberBOOL{Value: item.Checked},
+			"Order":     &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", item.Order)},
 			"CreatedAt": &types.AttributeValueMemberS{Value: item.CreatedAt},
 			"UpdatedAt": &types.AttributeValueMemberS{Value: item.UpdatedAt},
 		},
