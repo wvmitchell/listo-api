@@ -92,6 +92,7 @@ func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, erro
 			Title:         item["Title"].(*types.AttributeValueMemberS).Value,
 			Collaborators: collaborators,
 			CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
+			UpdatedAt:     item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 		}
 
 		checklists = append(checklists, checklist)
@@ -131,6 +132,7 @@ func (d *DynamoDBService) GetChecklist(userID string, checklistID string) (model
 		Locked:        item["Locked"].(*types.AttributeValueMemberBOOL).Value,
 		Collaborators: collaborators,
 		CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
+		UpdatedAt:     item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 	}
 
 	return checklist, nil

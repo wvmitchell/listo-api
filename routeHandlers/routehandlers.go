@@ -191,8 +191,6 @@ func PostItem(c *gin.Context) {
 		newItem.CreatedAt = time.Now().Format(time.RFC3339)
 		newItem.UpdatedAt = newItem.CreatedAt
 
-		println("New item ordering: ", newItem.Ordering)
-
 		err := service.CreateChecklistItem(userID, checklistID, &newItem)
 
 		if err != nil {
