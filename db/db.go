@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -30,8 +31,8 @@ func NewDynamoDBService() (*DynamoDBService, error) {
 	}
 
 	svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
-		// TODO: Set the endpoint based on the environment
-		o.BaseEndpoint = aws.String("http://localhost:8000")
+		str := os.Getenv("DYNAMODB_ENDPOINT")
+		o.BaseEndpoint = aws.String(str)
 	})
 
 	return &DynamoDBService{

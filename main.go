@@ -6,12 +6,18 @@ import (
 	"checklist-api/middleware"
 	"checklist-api/routehandlers"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Run the migrations
-	err := migrate.RunMigrations()
+	// Load the environment variables
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 
+	//Run the migrations
+	err = migrate.RunMigrations()
 	if err != nil {
 		panic(err)
 	}

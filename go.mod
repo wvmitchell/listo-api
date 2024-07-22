@@ -1,6 +1,6 @@
 module checklist-api
 
-go 1.22.4
+go 1.22
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.1 // indirect
@@ -31,6 +31,7 @@ require (
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
