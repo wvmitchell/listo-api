@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
@@ -387,6 +388,47 @@ func (d *DynamoDBService) DeleteChecklistItem(userID string, checklistID string,
 
 	if err != nil {
 		return fmt.Errorf("failed to delete item, %v", err)
+	}
+
+	return nil
+}
+
+// GetUser retrieves a user from the database.
+func (d *DynamoDBService) GetUser(userID string) (models.User, error) {
+	response, err := d.Client.GetItem(context.TODO(), &dynamodb.GetItemInput{
+		TableName: aws.String("Users"),
+		Key: map[string]types.AttributeValue{
+			"ID": &types.AttributeValueMemberS{Value: userID},
+		},
+	})
+
+	if err != nil {
+		return models.User{}, fmt.Errorf("failed to get item, %v", err)
+	}
+
+	user := models.User{}
+	err = attributevalue.UnmarshalMap(response.Item, &user)
+
+	if err != nil {
+		return models.User{}, fmt.Errorf("failed to unmarshal item, %v", err)
+	} else if user.ID == "" {
+		return models.User{}, fmt.Errorf("user not found")
+	}
+
+	return user, nil
+}
+
+// CreateUser creates a new user in the database.
+func (d *DynamoDBService) CreateUser(userID string) error {
+	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		TableName: aws.String("Users"),
+		Item: map[string]types.AttributeValue{
+			"ID": &types.AttributeValueMemberS{Value: userID},
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to put item, %v", err)
 	}
 
 	return nil

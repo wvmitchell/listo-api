@@ -16,10 +16,6 @@ This is the api for the checklist app, written in Go, using the Gin Web Framewor
 - Run `go run main.go` in the root directory
 - The app will be running on `localhost:8080`
 
-## Notes
-- The app is currently under development. Authorization and a database will be added soon.
-
-
 ## Deploying to AWS
 
 - The app is deployed to AWS using ECS and ECR. The Dockerfile is included in the repo.

@@ -20,3 +20,8 @@ type ChecklistItem struct {
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
+
+// User is a user of the application. Most info is actually stored in Auth0.
+type User struct {
+	ID string `json:"id"`
+}
