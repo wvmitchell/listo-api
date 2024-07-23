@@ -297,3 +297,100 @@ func DeleteItem(c *gin.Context) {
 		})
 	}
 }
+
+// GetUser returns the user information.
+func GetUser(c *gin.Context) {
+	userID := c.GetHeader("userID")
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	user, err := service.GetUser(userID)
+
+	if err != nil {
+		c.JSON(404, gin.H{
+			"message": "Error getting user: " + err.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"user": user,
+		})
+	}
+}
+
+// PostUser creates a new user.
+func PostUser(c *gin.Context) {
+	userID := c.GetHeader("userID")
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	err = service.CreateUser(userID)
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error creating user: " + err.Error(),
+		})
+	} else {
+		// create new checklist for user
+		checklist := models.Checklist{
+			ID:        uuid.New().String(),
+			Title:     "My First Listo",
+			Locked:    false,
+			CreatedAt: time.Now().Format(time.RFC3339),
+			UpdatedAt: time.Now().Format(time.RFC3339),
+		}
+		// save the checklist in the db
+		err = service.CreateChecklist(userID, &checklist)
+
+		if err != nil {
+			c.JSON(500, gin.H{
+				"message": "Error creating checklist: " + err.Error(),
+			})
+		}
+
+		firstListContent := []string{
+			"Edit the title of this Listo by clicking on the title. Your changes will be saved automatically.",
+			"Edit this item by clicking on it, making your changes, and clicking away, or <return>",
+			"Mark this item as done, by clicking on the checkbox",
+			"Reorder this item by dragging it somewhere else, and dropping it",
+			"Delete your checked items by selecting \"Delete Checked\" from the options dropdown",
+			"Add a new item to your Listo by clicking the + icon below all your items",
+			"Lock your Listo by selecting \"Lock\" from the options dropdown. You'll still be able to check/uncheck items, but can't change them. This is handy if you have checklists that you need to reuse.",
+			"Unlock your Listo by selecting \"Unlock\" from the options dropdown",
+			"Have fun!",
+		}
+
+		for i, content := range firstListContent {
+			item := models.ChecklistItem{
+				ID:        uuid.New().String(),
+				Content:   content,
+				Checked:   false,
+				Ordering:  i,
+				CreatedAt: time.Now().Format(time.RFC3339),
+				UpdatedAt: time.Now().Format(time.RFC3339),
+			}
+			err = service.CreateChecklistItem(userID, checklist.ID, &item)
+
+			if err != nil {
+				c.JSON(500, gin.H{
+					"message": "Error creating item: " + err.Error(),
+				})
+			}
+		}
+
+		c.JSON(200, gin.H{
+			"message": "User created with first checklist",
+		})
+	}
+}
