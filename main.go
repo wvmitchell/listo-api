@@ -24,6 +24,13 @@ func main() {
 
 	r := gin.Default()
 
+	// health check
+	r.GET(("/"), func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Checklist API",
+		})
+	})
+
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.AuthMiddleware())
 
@@ -37,7 +44,7 @@ func main() {
 	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
 	r.DELETE("/checklist/:id/item/:itemID", routehandlers.DeleteItem)
 
-	err = r.Run()
+	err = r.Run(":80")
 
 	if err != nil {
 		panic(err)

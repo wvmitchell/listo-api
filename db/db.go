@@ -31,8 +31,10 @@ func NewDynamoDBService() (*DynamoDBService, error) {
 	}
 
 	svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
-		str := os.Getenv("DYNAMODB_ENDPOINT")
-		o.BaseEndpoint = aws.String(str)
+		str := os.Getenv("ENVIRONMENT")
+		if str == "development" {
+			o.BaseEndpoint = aws.String("http://localhost:8000")
+		}
 	})
 
 	return &DynamoDBService{
