@@ -15,8 +15,6 @@ This is the api for the listo app, written in Go, using the Gin Web Framework.
 - `PUT /checklists/:id/items/:itemId` - Update an item in a checklist
 - `PUT /checklists/:id/items` - Update all items in a Checklist
 - `DELETE /checklists/:id/items/:itemId` - Delete an item in a Checklist
-- `GET /user/:id` - Get a User
-- `POST /user` - Create a new User (and intro checklist)
 
 ## Running the app
 - Containerize the app using Docker, and the dev environment:
