@@ -28,8 +28,9 @@ func GetChecklists(c *gin.Context) {
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 	} else {
-		user, err := service.GetUser(userID)
 
+		// Create user if they don't exist, which will also create their first checklist
+		user, err := service.GetUser(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error getting user: " + err.Error(),
@@ -43,8 +44,8 @@ func GetChecklists(c *gin.Context) {
 			}
 		}
 
+		// Get checklists for a user
 		checklists, err := service.GetChecklists(userID)
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error getting checklists: " + err.Error(),
@@ -319,55 +320,6 @@ func DeleteItem(c *gin.Context) {
 	} else {
 		c.JSON(200, gin.H{
 			"message": "Item deleted",
-		})
-	}
-}
-
-// GetUser returns the user information.
-func GetUser(c *gin.Context) {
-	userID := getUserID(c)
-	service, err := db.NewDynamoDBService()
-
-	if err != nil {
-		c.JSON(500, gin.H{
-			"message": "Error setting up DynamoDBService: " + err.Error(),
-		})
-	}
-
-	user, err := service.GetUser(userID)
-
-	if err != nil {
-		c.JSON(404, gin.H{
-			"message": "Error getting user: " + err.Error(),
-		})
-	} else {
-		c.JSON(200, gin.H{
-			"user": user,
-		})
-	}
-}
-
-// PostUser creates a new user.
-func PostUser(c *gin.Context) {
-	userID := getUserID(c)
-
-	service, err := db.NewDynamoDBService()
-
-	if err != nil {
-		c.JSON(500, gin.H{
-			"message": "Error setting up DynamoDBService: " + err.Error(),
-		})
-	}
-
-	err = service.CreateUser(userID)
-
-	if err != nil {
-		c.JSON(500, gin.H{
-			"message": "Error creating user: " + err.Error(),
-		})
-	} else {
-		c.JSON(200, gin.H{
-			"message": "User created with first checklist",
 		})
 	}
 }
