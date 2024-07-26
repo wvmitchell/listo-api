@@ -94,6 +94,7 @@ func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, erro
 		checklist := models.Checklist{
 			ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
 			Title:         item["Title"].(*types.AttributeValueMemberS).Value,
+			Locked:        item["Locked"].(*types.AttributeValueMemberBOOL).Value,
 			Collaborators: collaborators,
 			CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
 			UpdatedAt:     item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
@@ -233,8 +234,15 @@ func (d *DynamoDBService) UpdateChecklist(userID string, checklistID string, che
 	return nil
 }
 
-// DeleteChecklist deletes a checklist and all associated items from the database.
+// DeleteChecklist deletes a checklist and all associated items from the database, if unlocked.
 func (d *DynamoDBService) DeleteChecklist(userID string, checklistID string) error {
+	checklist, err := d.GetChecklist(userID, checklistID)
+	if err != nil {
+		return fmt.Errorf("failed to get checklist, %v", err)
+	} else if checklist.Locked {
+		return fmt.Errorf("checklist is locked")
+	}
+
 	items, err := d.GetChecklistItems(userID, checklistID)
 	if err != nil {
 		return fmt.Errorf("failed to get checklist items, %v", err)
