@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/google/uuid"
 )
 
 // DynamoDBService is a struct that holds the DynamoDB client.
@@ -420,7 +421,7 @@ func (d *DynamoDBService) GetUser(userID string) (models.User, error) {
 	if err != nil {
 		return models.User{}, fmt.Errorf("failed to unmarshal item, %v", err)
 	} else if user.ID == "" {
-		return models.User{}, fmt.Errorf("user not found")
+		return models.User{}, nil
 	}
 
 	return user, nil
@@ -436,7 +437,61 @@ func (d *DynamoDBService) CreateUser(userID string) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to put item, %v", err)
+		return fmt.Errorf("failed to create user, %v", err)
+	}
+
+	err = d.createIntroductoryListoForUser(userID)
+
+	if err != nil {
+		return fmt.Errorf("failed to create introductory listo, %v", err)
+	}
+
+	return nil
+}
+
+// createIntroductoryListoForUser creates a new listo for a user with introductory content.
+func (d *DynamoDBService) createIntroductoryListoForUser(userID string) error {
+	// create new checklist for user
+	checklist := models.Checklist{
+		ID:        uuid.New().String(),
+		Title:     "My First Listo",
+		Locked:    false,
+		CreatedAt: time.Now().Format(time.RFC3339),
+		UpdatedAt: time.Now().Format(time.RFC3339),
+	}
+	// save the checklist in the db
+	err := d.CreateChecklist(userID, &checklist)
+
+	if err != nil {
+		return fmt.Errorf("failed to create checklist, %v", err)
+	}
+
+	firstListContent := []string{
+		"Edit the title of this Listo by clicking on the title. Your changes will be saved automatically.",
+		"Edit this item by clicking on it, making your changes, and clicking away, or <return>",
+		"Mark this item as done, by clicking on the checkbox",
+		"Reorder this item by dragging it somewhere else, and dropping it",
+		"Delete your checked items by selecting \"Delete Checked\" from the options dropdown",
+		"Add a new item to your Listo by clicking the + icon below all your items",
+		"Lock your Listo by selecting \"Lock\" from the options dropdown. You'll still be able to check/uncheck items, but can't change them. This is handy if you have checklists that you need to reuse.",
+		"Unlock your Listo by selecting \"Unlock\" from the options dropdown",
+		"Have fun!",
+	}
+
+	for i, content := range firstListContent {
+		item := models.ChecklistItem{
+			ID:        uuid.New().String(),
+			Content:   content,
+			Checked:   false,
+			Ordering:  i,
+			CreatedAt: time.Now().Format(time.RFC3339),
+			UpdatedAt: time.Now().Format(time.RFC3339),
+		}
+		err = d.CreateChecklistItem(userID, checklist.ID, &item)
+
+		if err != nil {
+			return fmt.Errorf("failed to create item, %v", err)
+		}
 	}
 
 	return nil

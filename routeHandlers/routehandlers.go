@@ -21,22 +21,37 @@ func getUserID(c *gin.Context) string {
 // GetChecklists returns all checklists for a user.
 func GetChecklists(c *gin.Context) {
 	userID := getUserID(c)
-
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 	} else {
-		checklists, err := service.GetChecklists(userID)
 
+		// Create user if they don't exist, which will also create their first checklist
+		user, err := service.GetUser(userID)
 		if err != nil {
-			c.JSON(400, gin.H{
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error getting user: " + err.Error(),
+			})
+		} else if user.ID == "" {
+			err = service.CreateUser(userID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": "Error creating user: " + err.Error(),
+				})
+			}
+		}
+
+		// Get checklists for a user
+		checklists, err := service.GetChecklists(userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error getting checklists: " + err.Error(),
 			})
 		} else {
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"checklists": checklists,
 			})
 		}
@@ -305,102 +320,6 @@ func DeleteItem(c *gin.Context) {
 	} else {
 		c.JSON(200, gin.H{
 			"message": "Item deleted",
-		})
-	}
-}
-
-// GetUser returns the user information.
-func GetUser(c *gin.Context) {
-	userID := getUserID(c)
-	service, err := db.NewDynamoDBService()
-
-	if err != nil {
-		c.JSON(500, gin.H{
-			"message": "Error setting up DynamoDBService: " + err.Error(),
-		})
-	}
-
-	user, err := service.GetUser(userID)
-
-	if err != nil {
-		c.JSON(404, gin.H{
-			"message": "Error getting user: " + err.Error(),
-		})
-	} else {
-		c.JSON(200, gin.H{
-			"user": user,
-		})
-	}
-}
-
-// PostUser creates a new user.
-func PostUser(c *gin.Context) {
-	userID := getUserID(c)
-
-	service, err := db.NewDynamoDBService()
-
-	if err != nil {
-		c.JSON(500, gin.H{
-			"message": "Error setting up DynamoDBService: " + err.Error(),
-		})
-	}
-
-	err = service.CreateUser(userID)
-
-	if err != nil {
-		c.JSON(500, gin.H{
-			"message": "Error creating user: " + err.Error(),
-		})
-	} else {
-		// create new checklist for user
-		checklist := models.Checklist{
-			ID:        uuid.New().String(),
-			Title:     "My First Listo",
-			Locked:    false,
-			CreatedAt: time.Now().Format(time.RFC3339),
-			UpdatedAt: time.Now().Format(time.RFC3339),
-		}
-		// save the checklist in the db
-		err = service.CreateChecklist(userID, &checklist)
-
-		if err != nil {
-			c.JSON(500, gin.H{
-				"message": "Error creating checklist: " + err.Error(),
-			})
-		}
-
-		firstListContent := []string{
-			"Edit the title of this Listo by clicking on the title. Your changes will be saved automatically.",
-			"Edit this item by clicking on it, making your changes, and clicking away, or <return>",
-			"Mark this item as done, by clicking on the checkbox",
-			"Reorder this item by dragging it somewhere else, and dropping it",
-			"Delete your checked items by selecting \"Delete Checked\" from the options dropdown",
-			"Add a new item to your Listo by clicking the + icon below all your items",
-			"Lock your Listo by selecting \"Lock\" from the options dropdown. You'll still be able to check/uncheck items, but can't change them. This is handy if you have checklists that you need to reuse.",
-			"Unlock your Listo by selecting \"Unlock\" from the options dropdown",
-			"Have fun!",
-		}
-
-		for i, content := range firstListContent {
-			item := models.ChecklistItem{
-				ID:        uuid.New().String(),
-				Content:   content,
-				Checked:   false,
-				Ordering:  i,
-				CreatedAt: time.Now().Format(time.RFC3339),
-				UpdatedAt: time.Now().Format(time.RFC3339),
-			}
-			err = service.CreateChecklistItem(userID, checklist.ID, &item)
-
-			if err != nil {
-				c.JSON(500, gin.H{
-					"message": "Error creating item: " + err.Error(),
-				})
-			}
-		}
-
-		c.JSON(200, gin.H{
-			"message": "User created with first checklist",
 		})
 	}
 }
