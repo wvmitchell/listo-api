@@ -9,15 +9,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func main() {
+func init() {
 	// Load the environment variables
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
+}
 
+func main() {
 	//Run the migrations
-	err = migrate.RunMigrations()
+	err := migrate.RunMigrations()
 	if err != nil {
 		panic(err)
 	}
