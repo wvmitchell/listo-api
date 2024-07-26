@@ -9,15 +9,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func main() {
+func init() {
 	// Load the environment variables
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
+}
 
+func main() {
 	//Run the migrations
-	err = migrate.RunMigrations()
+	err := migrate.RunMigrations()
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +45,7 @@ func main() {
 	r.PUT("/checklist/:id/items", routehandlers.PutAllItems)
 	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
 	r.DELETE("/checklist/:id/item/:itemID", routehandlers.DeleteItem)
-	r.GET("/user/:id", routehandlers.GetUser)
+	r.GET("/user", routehandlers.GetUser)
 	r.POST("/user", routehandlers.PostUser)
 
 	err = r.Run(":80")

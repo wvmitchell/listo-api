@@ -6,12 +6,21 @@ import (
 	"checklist-api/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"net/http"
 	"time"
 )
 
+func getUserID(c *gin.Context) string {
+	sub, exist := c.Get("sub")
+	if !exist {
+		c.AbortWithStatus(http.StatusInternalServerError)
+	}
+	return sub.(string)
+}
+
 // GetChecklists returns all checklists for a user.
 func GetChecklists(c *gin.Context) {
-	userID := c.GetHeader("userID")
+	userID := getUserID(c)
 
 	service, err := db.NewDynamoDBService()
 
@@ -36,7 +45,7 @@ func GetChecklists(c *gin.Context) {
 
 // GetChecklist returns a single checklist and items.
 func GetChecklist(c *gin.Context) {
-	userID := c.GetHeader("userID")
+	userID := getUserID(c)
 	id := c.Param("id")
 
 	service, err := db.NewDynamoDBService()
@@ -72,8 +81,9 @@ func GetChecklist(c *gin.Context) {
 
 // PutChecklist updates a checklist.
 func PutChecklist(c *gin.Context) {
+	userID := getUserID(c)
+
 	service, err := db.NewDynamoDBService()
-	userID := c.GetHeader("userID")
 	var updatedChecklist models.Checklist
 
 	if err != nil {
@@ -105,8 +115,9 @@ func PutChecklist(c *gin.Context) {
 
 // PostChecklist creates a new checklist.
 func PostChecklist(c *gin.Context) {
+	userID := getUserID(c)
+
 	service, err := db.NewDynamoDBService()
-	userID := c.GetHeader("userID")
 	var checklist models.Checklist
 
 	if err != nil {
@@ -145,7 +156,7 @@ func PostChecklist(c *gin.Context) {
 
 // DeleteChecklist deletes a checklist.
 func DeleteChecklist(c *gin.Context) {
-	userID := c.GetHeader("userID")
+	userID := getUserID(c)
 	id := c.Param("id")
 
 	service, err := db.NewDynamoDBService()
@@ -171,7 +182,7 @@ func DeleteChecklist(c *gin.Context) {
 
 // PostItem adds an item to a checklist.
 func PostItem(c *gin.Context) {
-	userID := c.GetHeader("userID")
+	userID := getUserID(c)
 	checklistID := c.Param("id")
 	var newItem models.ChecklistItem
 
@@ -208,7 +219,7 @@ func PostItem(c *gin.Context) {
 
 // PutItem updates an item in a checklist.
 func PutItem(c *gin.Context) {
-	userID := c.GetHeader("userID")
+	userID := getUserID(c)
 	checklistID := c.Param("id")
 	itemID := c.Param("itemID")
 
@@ -246,8 +257,8 @@ func PutItem(c *gin.Context) {
 
 // PutAllItems updates all items in a checklist. Currently just sets all items to checked/unchecked.
 func PutAllItems(c *gin.Context) {
+	userID := getUserID(c)
 	checklistID := c.Param("id")
-	userID := c.GetHeader("userID")
 	checked := c.Query("checked") == "true"
 	service, err := db.NewDynamoDBService()
 
@@ -272,7 +283,7 @@ func PutAllItems(c *gin.Context) {
 
 // DeleteItem deletes an item from a checklist.
 func DeleteItem(c *gin.Context) {
-	userID := c.GetHeader("userID")
+	userID := getUserID(c)
 	checklistID := c.Param("id")
 	itemID := c.Param("itemID")
 
@@ -300,8 +311,7 @@ func DeleteItem(c *gin.Context) {
 
 // GetUser returns the user information.
 func GetUser(c *gin.Context) {
-	userID := c.GetHeader("userID")
-
+	userID := getUserID(c)
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
@@ -325,7 +335,7 @@ func GetUser(c *gin.Context) {
 
 // PostUser creates a new user.
 func PostUser(c *gin.Context) {
-	userID := c.GetHeader("userID")
+	userID := getUserID(c)
 
 	service, err := db.NewDynamoDBService()
 
