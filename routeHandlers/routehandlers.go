@@ -2,12 +2,14 @@
 package routehandlers
 
 import (
-	"checklist-api/db"
-	"checklist-api/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
 	"time"
+
+	"checklist-api/db"
+	"checklist-api/models"
+	"checklist-api/sharing"
 )
 
 func getUserID(c *gin.Context) string {
@@ -192,6 +194,23 @@ func DeleteChecklist(c *gin.Context) {
 				"message": "Checklist deleted",
 			})
 		}
+	}
+}
+
+// GetShareCode returns a share code for a checklist.
+func GetShareCode(c *gin.Context) {
+	checklistID := c.Param("id")
+
+	code, err := sharing.GenerateSharingCode(checklistID)
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error generating share code: " + err.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"code": code,
+		})
 	}
 }
 

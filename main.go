@@ -45,6 +45,7 @@ func main() {
 	r.PUT("/checklist/:id/items", routehandlers.PutAllItems)
 	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
 	r.DELETE("/checklist/:id/item/:itemID", routehandlers.DeleteItem)
+	r.GET("/checklist/:id/share", routehandlers.GetShareCode)
 
 	err = r.Run(":80")
 
