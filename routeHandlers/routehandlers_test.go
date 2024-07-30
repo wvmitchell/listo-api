@@ -16,7 +16,11 @@ func Test_getUserID(t *testing.T) {
 		args args
 		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Test get user id",
+			args: args{
+				c: &gin.Context{},
+			},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
