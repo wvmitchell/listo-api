@@ -11,7 +11,8 @@ var testJwtKey = []byte("test_jwt_key")
 
 func TestGenerateShareToken(t *testing.T) {
 	checklistID := "test_checklist_id"
-	token, err := GenerateSharingCode(checklistID)
+	userID := "test_user_id"
+	token, err := GenerateSharingCode(checklistID, userID)
 	if err != nil {
 		t.Fatalf("Failed to generate token: %v", err)
 	}
@@ -23,7 +24,8 @@ func TestGenerateShareToken(t *testing.T) {
 
 func TestParseShareToken(t *testing.T) {
 	checklistID := "test_checklist_id"
-	token, err := GenerateSharingCode(checklistID)
+	userID := "test_user_id"
+	token, err := GenerateSharingCode(checklistID, userID)
 	if err != nil {
 		t.Fatalf("Failed to generate token: %v", err)
 	}

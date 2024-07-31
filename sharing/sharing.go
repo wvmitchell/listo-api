@@ -13,14 +13,16 @@ var jwtKey = []byte(os.Getenv("JWT_SECRET"))
 // Claims is a struct that contains the claims for the JWT.
 type Claims struct {
 	ChecklistID string `json:"checklist_id"`
+	UserID      string `json:"user_id"`
 	jwt.StandardClaims
 }
 
 // GenerateSharingCode generates a sharing code for a checklist.
-func GenerateSharingCode(checklistID string) (string, error) {
+func GenerateSharingCode(checklistID string, userID string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		ChecklistID: checklistID,
+		UserID:      userID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},

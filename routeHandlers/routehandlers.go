@@ -199,9 +199,10 @@ func DeleteChecklist(c *gin.Context) {
 
 // GetShareCode returns a share code for a checklist.
 func GetShareCode(c *gin.Context) {
+	userID := getUserID(c)
 	checklistID := c.Param("id")
 
-	code, err := sharing.GenerateSharingCode(checklistID)
+	code, err := sharing.GenerateSharingCode(checklistID, userID)
 
 	if err != nil {
 		c.JSON(500, gin.H{
