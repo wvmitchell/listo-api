@@ -4,6 +4,8 @@ package db
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -15,10 +17,14 @@ var ctx = context.Background()
 
 // NewRedisService sets up a new Redis client and returns it.
 func NewRedisService() (*RedisService, error) {
+	addr := os.Getenv("REDIS_URL")
+	password := os.Getenv("REDIS_PASSWORD")
+	db, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
+		Addr:     addr,
+		Password: password,
+		DB:       db,
 	})
 
 	// Test connection
