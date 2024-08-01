@@ -416,6 +416,53 @@ func PostItem(c *gin.Context) {
 	}
 }
 
+// PostSharedItem posts a new item to a shared checklist
+func PostSharedItem(c *gin.Context) {
+	userID := getUserID(c)
+	checklistID := c.Param("id")
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	ownerID, err := service.GetChecklistOwner(userID, checklistID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error getting checklist owner: " + err.Error(),
+		})
+		return
+	}
+
+	var newItem models.ChecklistItem
+	if err := c.BindJSON(&newItem); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid request: " + err.Error(),
+		})
+	} else {
+		newItem.ID = uuid.New().String()
+		newItem.Checked = false
+		newItem.CreatedAt = time.Now().Format(time.RFC3339)
+		newItem.UpdatedAt = newItem.CreatedAt
+
+		err := service.CreateChecklistItem(ownerID, checklistID, &newItem)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error creating item: " + err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Item created",
+				"item":    newItem,
+			})
+		}
+	}
+}
+
 // PutItem updates an item in a checklist.
 func PutItem(c *gin.Context) {
 	userID := getUserID(c)
@@ -442,6 +489,50 @@ func PutItem(c *gin.Context) {
 
 	updatedItem.UpdatedAt = time.Now().Format(time.RFC3339)
 	err = service.UpdateChecklistItem(userID, checklistID, itemID, &updatedItem)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error updating item: " + err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Item updated",
+		})
+	}
+}
+
+// PutSharedItem updates an item in a shared checklist.
+func PutSharedItem(c *gin.Context) {
+	userID := getUserID(c)
+	checklistID := c.Param("id")
+	itemID := c.Param("itemID")
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	ownerID, err := service.GetChecklistOwner(userID, checklistID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error getting checklist owner: " + err.Error(),
+		})
+		return
+	}
+
+	var updatedItem models.ChecklistItem
+	if err := c.BindJSON(&updatedItem); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid request",
+		})
+		return
+	}
+
+	updatedItem.UpdatedAt = time.Now().Format(time.RFC3339)
+	err = service.UpdateChecklistItem(ownerID, checklistID, itemID, &updatedItem)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
