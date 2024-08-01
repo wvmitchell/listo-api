@@ -4,6 +4,7 @@ package db
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
+	"time"
 )
 
 type RedisService struct {
@@ -33,7 +34,7 @@ func NewRedisService() (*RedisService, error) {
 
 // SetShortCodeWithJWT sets a sha256 truncated hash as the key and the original JWT as the value.
 func (rs *RedisService) SetShortCodeWithJWT(shortCode string, jwt string) error {
-	err := rs.Client.Set(ctx, shortCode, jwt, 12*60*60)
+	err := rs.Client.Set(ctx, shortCode, jwt, time.Duration(12*time.Hour))
 	if err.Err() != nil {
 		return err.Err()
 	}
