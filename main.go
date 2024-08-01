@@ -40,7 +40,9 @@ func main() {
 	r.GET("/checklists", routehandlers.GetChecklists)
 	r.GET("/checklists/shared", routehandlers.GetSharedChecklists)
 	r.GET("/checklist/:id", routehandlers.GetChecklist)
+	r.GET("/checklist/:id/shared", routehandlers.GetSharedChecklist)
 	r.PUT("/checklist/:id", routehandlers.PutChecklist)
+	r.PUT("/checklist/:id/shared", routehandlers.PutSharedChecklist)
 	r.POST("/checklist", routehandlers.PostChecklist)
 	r.DELETE("/checklist/:id", routehandlers.DeleteChecklist)
 

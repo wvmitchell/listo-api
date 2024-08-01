@@ -244,6 +244,7 @@ func (d *DynamoDBService) UpdateChecklist(userID string, checklistID string, che
 }
 
 // DeleteChecklist deletes a checklist and all associated items from the database, if unlocked.
+// TODO: if there are any collaborators, those will be removed from the ChecklistCollaborators table.
 func (d *DynamoDBService) DeleteChecklist(userID string, checklistID string) error {
 	checklist, err := d.GetChecklist(userID, checklistID)
 	if err != nil {
@@ -311,6 +312,23 @@ func (d *DynamoDBService) AddCollaborator(userID string, checklistID string, col
 	}
 
 	return nil
+}
+
+// GetChecklistOwner retrieves the owner of a checklist.
+func (d *DynamoDBService) GetChecklistOwner(userID string, checklistID string) (string, error) {
+	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("ChecklistCollaborators"),
+		KeyConditionExpression: aws.String("PK = :pk AND SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			":sk": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to query table, %v", err)
+	}
+
+	return output.Items[0]["OwnerID"].(*types.AttributeValueMemberS).Value, nil
 }
 
 // CreateChecklistItem creates a new item in a checklist.
