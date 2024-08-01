@@ -379,6 +379,7 @@ func (d *DynamoDBService) UpdateChecklistItem(userID string, checklistID string,
 }
 
 // UpdateChecklistItems updates all items in a checklist.
+// currently only supports 100 total items, and is only for checking/unchecking all items.
 func (d *DynamoDBService) UpdateChecklistItems(userID string, checklistID string, checked bool) error {
 	items, err := d.GetChecklistItems(userID, checklistID)
 

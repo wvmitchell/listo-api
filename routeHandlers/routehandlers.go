@@ -572,6 +572,40 @@ func PutAllItems(c *gin.Context) {
 	}
 }
 
+func PutAllSharedItems(c *gin.Context) {
+	userID := getUserID(c)
+	checklistID := c.Param("id")
+	checked := c.Query("checked") == "true"
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	ownerID, err := service.GetChecklistOwner(userID, checklistID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error getting checklist owner: " + err.Error(),
+		})
+		return
+	}
+
+	err = service.UpdateChecklistItems(ownerID, checklistID, checked)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error updating items: " + err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Items updated",
+		})
+	}
+}
+
 // DeleteItem deletes an item from a checklist.
 func DeleteItem(c *gin.Context) {
 	userID := getUserID(c)

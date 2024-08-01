@@ -49,6 +49,10 @@ func main() {
 	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
 	r.DELETE("/checklist/:id/item/:itemID", routehandlers.DeleteItem)
 
+	// Sharing
+	r.GET("/checklist/:id/share", routehandlers.GetShareCode)
+	r.POST("/checklist/share/:code", routehandlers.PostUserToSharedChecklist)
+
 	// Shared Checklists
 	r.GET("/checklists/shared", routehandlers.GetSharedChecklists)
 	r.GET("/checklist/:id/shared", routehandlers.GetSharedChecklist)
@@ -56,11 +60,8 @@ func main() {
 
 	// Shared Items
 	r.POST("/checklist/:id/shared/item", routehandlers.PostSharedItem)
+	r.PUT("/checklist/:id/shared/items", routehandlers.PutAllSharedItems)
 	r.PUT("/checklist/:id/shared/item/:itemID", routehandlers.PutSharedItem)
-
-	// Sharing
-	r.GET("/checklist/:id/share", routehandlers.GetShareCode)
-	r.POST("/checklist/share/:code", routehandlers.PostUserToSharedChecklist)
 
 	err = r.Run(":80")
 
