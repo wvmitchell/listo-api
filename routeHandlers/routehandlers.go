@@ -2,10 +2,11 @@
 package routehandlers
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"checklist-api/db"
 	"checklist-api/models"
@@ -37,12 +38,14 @@ func GetChecklists(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error getting user: " + err.Error(),
 			})
+			return
 		} else if user.ID == "" {
 			err = service.CreateUser(userID)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"message": "Error creating user: " + err.Error(),
 				})
+				return
 			}
 		}
 
@@ -66,18 +69,19 @@ func GetSharedChecklists(c *gin.Context) {
 
 	service, err := db.NewDynamoDBService()
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
+		return
 	}
 
 	checklists, err := service.GetSharedChecklists(userID)
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error getting shared checklists: " + err.Error(),
 		})
 	} else {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"shared checklists": checklists,
 		})
 	}
@@ -91,28 +95,29 @@ func GetChecklist(c *gin.Context) {
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
+		return
 	}
 
 	checklist, checklistErr := service.GetChecklist(userID, id)
 	items, itemsErr := service.GetChecklistItems(userID, id)
 
 	if checklistErr != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Error getting checklist: " + checklistErr.Error(),
 		})
 	} else if itemsErr != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Error getting items: " + itemsErr.Error(),
 		})
 	} else if checklist.ID == "" {
-		c.JSON(404, gin.H{
+		c.JSON(http.StatusNotFound, gin.H{
 			"message": "Checklist does not exist",
 		})
 	} else {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"checklist": checklist,
 			"items":     items,
 		})
@@ -127,13 +132,14 @@ func PutChecklist(c *gin.Context) {
 	var updatedChecklist models.Checklist
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
+		return
 	}
 
 	if err := c.BindJSON(&updatedChecklist); err != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid request: " + err.Error(),
 		})
 	} else {
@@ -142,11 +148,11 @@ func PutChecklist(c *gin.Context) {
 		err := service.UpdateChecklist(userID, updatedChecklist.ID, &updatedChecklist)
 
 		if err != nil {
-			c.JSON(500, gin.H{
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error updating checklist: " + err.Error(),
 			})
 		} else {
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"message": "Checklist updated",
 			})
 		}
@@ -161,17 +167,18 @@ func PostChecklist(c *gin.Context) {
 	var checklist models.Checklist
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
+		return
 	}
 
 	if err := c.BindJSON(&checklist); err != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid request: " + err.Error(),
 		})
 	} else if checklist.Title == "" {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Title is required",
 		})
 	} else {
@@ -182,11 +189,11 @@ func PostChecklist(c *gin.Context) {
 		err := service.CreateChecklist(userID, &checklist)
 
 		if err != nil {
-			c.JSON(500, gin.H{
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error creating checklist: " + err.Error(),
 			})
 		} else {
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"message":   "Checklist created",
 				"checklist": checklist,
 			})
@@ -202,18 +209,18 @@ func DeleteChecklist(c *gin.Context) {
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 	} else {
 		err := service.DeleteChecklist(userID, id)
 
 		if err != nil {
-			c.JSON(500, gin.H{
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error deleting checklist: " + err.Error(),
 			})
 		} else {
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"message": "Checklist deleted",
 			})
 		}
@@ -228,11 +235,11 @@ func GetShareCode(c *gin.Context) {
 	code, err := sharing.GetShareCode(checklistID, userID)
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error generating share code: " + err.Error(),
 		})
 	} else {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": code,
 		})
 	}
@@ -244,38 +251,42 @@ func PostUserToSharedChecklist(c *gin.Context) {
 
 	token, err := sharing.GetTokenFromShareCode(code)
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error getting token from share code: " + err.Error(),
 		})
+		return
 	}
 
 	parsedToken, err := sharing.ParseSharingToken(token)
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error parsing token: " + err.Error(),
 		})
+		return
 	}
 
 	if parsedToken.UserID == userID {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "You can't add yourself to your own checklist",
 		})
+		return
 	}
 
 	service, err := db.NewDynamoDBService()
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
+		return
 	}
 
 	err = service.AddCollaborator(parsedToken.UserID, parsedToken.ChecklistID, userID)
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error adding user to shared checklist: " + err.Error(),
 		})
 	} else {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "User added to shared checklist",
 		})
 	}
@@ -290,11 +301,11 @@ func PostItem(c *gin.Context) {
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 	} else if err := c.BindJSON(&newItem); err != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid request: " + err.Error(),
 		})
 	} else {
@@ -306,11 +317,11 @@ func PostItem(c *gin.Context) {
 		err := service.CreateChecklistItem(userID, checklistID, &newItem)
 
 		if err != nil {
-			c.JSON(500, gin.H{
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error creating item: " + err.Error(),
 			})
 		} else {
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"message": "Item created",
 				"item":    newItem,
 			})
@@ -327,7 +338,7 @@ func PutItem(c *gin.Context) {
 	var updatedItem models.ChecklistItem
 
 	if err := c.BindJSON(&updatedItem); err != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid request",
 		})
 		return
@@ -336,7 +347,7 @@ func PutItem(c *gin.Context) {
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 		return
@@ -346,11 +357,11 @@ func PutItem(c *gin.Context) {
 	err = service.UpdateChecklistItem(userID, checklistID, itemID, &updatedItem)
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error updating item: " + err.Error(),
 		})
 	} else {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "Item updated",
 		})
 	}
@@ -364,19 +375,20 @@ func PutAllItems(c *gin.Context) {
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
+		return
 	}
 
 	err = service.UpdateChecklistItems(userID, checklistID, checked)
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error updating items: " + err.Error(),
 		})
 	} else {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "Items updated",
 		})
 	}
@@ -391,7 +403,7 @@ func DeleteItem(c *gin.Context) {
 	service, err := db.NewDynamoDBService()
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 		return
@@ -400,11 +412,11 @@ func DeleteItem(c *gin.Context) {
 	err = service.DeleteChecklistItem(userID, checklistID, itemID)
 
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error deleting item: " + err.Error(),
 		})
 	} else {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "Item deleted",
 		})
 	}
