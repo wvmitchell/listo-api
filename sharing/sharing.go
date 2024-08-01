@@ -70,7 +70,7 @@ func GetShareCode(checklistID string, userID string) (string, error) {
 	}
 
 	hash := sha256.New()
-	hash.Write([]byte(checklistID + userID))
+	hash.Write([]byte(checklistID + userID + time.Now().String()))
 	shortCode := fmt.Sprintf("%x", hash.Sum(nil))[0:11]
 
 	token, err := generateSharingToken(checklistID, userID)
