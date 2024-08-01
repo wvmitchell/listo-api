@@ -36,16 +36,23 @@ func main() {
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.AuthMiddleware())
 
+	// Checklists
 	r.GET("/checklists", routehandlers.GetChecklists)
+	r.GET("/checklists/shared", routehandlers.GetSharedChecklists)
 	r.GET("/checklist/:id", routehandlers.GetChecklist)
 	r.PUT("/checklist/:id", routehandlers.PutChecklist)
 	r.POST("/checklist", routehandlers.PostChecklist)
 	r.DELETE("/checklist/:id", routehandlers.DeleteChecklist)
+
+	// Items
 	r.POST("/checklist/:id/item", routehandlers.PostItem)
 	r.PUT("/checklist/:id/items", routehandlers.PutAllItems)
 	r.PUT("/checklist/:id/item/:itemID", routehandlers.PutItem)
 	r.DELETE("/checklist/:id/item/:itemID", routehandlers.DeleteItem)
+
+	// Sharing
 	r.GET("/checklist/:id/share", routehandlers.GetShareCode)
+	r.POST("/checklist/share/:code", routehandlers.PostUserToSharedChecklist)
 
 	err = r.Run(":80")
 

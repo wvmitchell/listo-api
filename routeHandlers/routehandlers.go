@@ -60,6 +60,29 @@ func GetChecklists(c *gin.Context) {
 	}
 }
 
+// GetSharedChecklists returns all checklists shared with the user (userID) by other users.
+func GetSharedChecklists(c *gin.Context) {
+	userID := getUserID(c)
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	checklists, err := service.GetSharedChecklists(userID)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error getting shared checklists: " + err.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"shared checklists": checklists,
+		})
+	}
+}
+
 // GetChecklist returns a single checklist and items.
 func GetChecklist(c *gin.Context) {
 	userID := getUserID(c)
@@ -202,7 +225,7 @@ func GetShareCode(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
 
-	code, err := sharing.GenerateSharingCode(checklistID, userID)
+	code, err := sharing.GetShareCode(checklistID, userID)
 
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -211,6 +234,49 @@ func GetShareCode(c *gin.Context) {
 	} else {
 		c.JSON(200, gin.H{
 			"code": code,
+		})
+	}
+}
+
+func PostUserToSharedChecklist(c *gin.Context) {
+	userID := getUserID(c)
+	code := c.Param("code")
+
+	token, err := sharing.GetTokenFromShareCode(code)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error getting token from share code: " + err.Error(),
+		})
+	}
+
+	parsedToken, err := sharing.ParseSharingToken(token)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error parsing token: " + err.Error(),
+		})
+	}
+
+	if parsedToken.UserID == userID {
+		c.JSON(400, gin.H{
+			"message": "You can't add yourself to your own checklist",
+		})
+	}
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	}
+
+	err = service.AddCollaborator(parsedToken.UserID, parsedToken.ChecklistID, userID)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": "Error adding user to shared checklist: " + err.Error(),
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"message": "User added to shared checklist",
 		})
 	}
 }
