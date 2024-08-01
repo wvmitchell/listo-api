@@ -15,6 +15,7 @@ type migration struct {
 var migrationList = []migration{
 	{1, "1_create_users_table", migrations.CreateUsersTable},
 	{2, "2_create_checklists_table", migrations.CreateChecklistsTable},
+	{3, "3_create_checklist_collaborators_table", migrations.CreateChecklistCollaboratorsTable},
 	// Add new migrations here
 }
 
