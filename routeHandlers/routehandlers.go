@@ -637,3 +637,36 @@ func DeleteItem(c *gin.Context) {
 }
 
 // DeleteSharedItem handles the request to delete an item from a shared checklist.
+func DeleteSharedItem(c *gin.Context) {
+	userID := getUserID(c)
+	checklistID := c.Param("id")
+	itemID := c.Param("itemID")
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	ownerID, err := service.GetChecklistOwner(userID, checklistID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error getting checklist owner: " + err.Error(),
+		})
+		return
+	}
+
+	err = service.DeleteChecklistItem(ownerID, checklistID, itemID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error deleting item: " + err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Item deleted",
+		})
+	}
+}

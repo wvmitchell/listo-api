@@ -62,6 +62,7 @@ func main() {
 	r.POST("/checklist/:id/shared/item", routehandlers.PostSharedItem)
 	r.PUT("/checklist/:id/shared/items", routehandlers.PutAllSharedItems)
 	r.PUT("/checklist/:id/shared/item/:itemID", routehandlers.PutSharedItem)
+	r.DELETE("/checklist/:id/shared/item/:itemID", routehandlers.DeleteSharedItem)
 
 	err = r.Run(":80")
 
