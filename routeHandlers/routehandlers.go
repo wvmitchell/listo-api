@@ -21,7 +21,7 @@ func getUserID(c *gin.Context) string {
 	return sub.(string)
 }
 
-// GetChecklists returns all checklists for a user.
+// GetChecklists handles the request to get all checklists.
 func GetChecklists(c *gin.Context) {
 	userID := getUserID(c)
 	service, err := db.NewDynamoDBService()
@@ -63,7 +63,7 @@ func GetChecklists(c *gin.Context) {
 	}
 }
 
-// GetSharedChecklists returns all checklists shared with the user (userID) by other users.
+// GetSharedChecklists handles the request to get all shared checklists.
 func GetSharedChecklists(c *gin.Context) {
 	userID := getUserID(c)
 
@@ -87,7 +87,7 @@ func GetSharedChecklists(c *gin.Context) {
 	}
 }
 
-// GetChecklist returns a single checklist and items.
+// GetChecklist handles the request to get a single checklist.
 func GetChecklist(c *gin.Context) {
 	userID := getUserID(c)
 	id := c.Param("id")
@@ -124,7 +124,7 @@ func GetChecklist(c *gin.Context) {
 	}
 }
 
-// GetSharedChecklist returns a single shared checklist and items.
+// GetSharedChecklist handles the request to get a shared checklist.
 func GetSharedChecklist(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -168,7 +168,7 @@ func GetSharedChecklist(c *gin.Context) {
 	}
 }
 
-// PutChecklist updates a checklist.
+// PutChecklist handles the request to update a checklist.
 func PutChecklist(c *gin.Context) {
 	userID := getUserID(c)
 
@@ -203,7 +203,7 @@ func PutChecklist(c *gin.Context) {
 	}
 }
 
-// PutSharedChecklist updates a shared checklist.
+// PutSharedChecklist handles the request to update a shared checklist.
 func PutSharedChecklist(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -246,7 +246,7 @@ func PutSharedChecklist(c *gin.Context) {
 	}
 }
 
-// PostChecklist creates a new checklist.
+// PostChecklist handles the request to create a new checklist.
 func PostChecklist(c *gin.Context) {
 	userID := getUserID(c)
 
@@ -288,7 +288,7 @@ func PostChecklist(c *gin.Context) {
 	}
 }
 
-// DeleteChecklist deletes a checklist.
+// DeleteChecklist handles the request to delete a checklist.
 func DeleteChecklist(c *gin.Context) {
 	userID := getUserID(c)
 	id := c.Param("id")
@@ -314,7 +314,7 @@ func DeleteChecklist(c *gin.Context) {
 	}
 }
 
-// GetShareCode returns a share code for a checklist.
+// GetShareCode handles the request to generate a share code for a checklist.
 func GetShareCode(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -332,6 +332,7 @@ func GetShareCode(c *gin.Context) {
 	}
 }
 
+// PostUserToSharedChecklist handles the request to add a user to a shared checklist.
 func PostUserToSharedChecklist(c *gin.Context) {
 	userID := getUserID(c)
 	code := c.Param("code")
@@ -379,7 +380,7 @@ func PostUserToSharedChecklist(c *gin.Context) {
 	}
 }
 
-// PostItem adds an item to a checklist.
+// PostItem handles the request to add an item to a checklist.
 func PostItem(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -416,7 +417,7 @@ func PostItem(c *gin.Context) {
 	}
 }
 
-// PostSharedItem posts a new item to a shared checklist
+// PostSharedItem handles the request to add an item to a shared checklist.
 func PostSharedItem(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -463,7 +464,7 @@ func PostSharedItem(c *gin.Context) {
 	}
 }
 
-// PutItem updates an item in a checklist.
+// PutItem handles the request to update an item in a checklist.
 func PutItem(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -501,7 +502,7 @@ func PutItem(c *gin.Context) {
 	}
 }
 
-// PutSharedItem updates an item in a shared checklist.
+// PutSharedItem handles the request to update an item in a shared checklist.
 func PutSharedItem(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -545,7 +546,7 @@ func PutSharedItem(c *gin.Context) {
 	}
 }
 
-// PutAllItems updates all items in a checklist. Currently just sets all items to checked/unchecked.
+// PutAllItems handles the request to update all items in a checklist.
 func PutAllItems(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -572,6 +573,7 @@ func PutAllItems(c *gin.Context) {
 	}
 }
 
+// PutAllSharedItems handles the request to update all items in a shared checklist.
 func PutAllSharedItems(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -606,7 +608,7 @@ func PutAllSharedItems(c *gin.Context) {
 	}
 }
 
-// DeleteItem deletes an item from a checklist.
+// DeleteItem handles the request to delete an item from a checklist.
 func DeleteItem(c *gin.Context) {
 	userID := getUserID(c)
 	checklistID := c.Param("id")
@@ -633,3 +635,5 @@ func DeleteItem(c *gin.Context) {
 		})
 	}
 }
+
+// DeleteSharedItem handles the request to delete an item from a shared checklist.
