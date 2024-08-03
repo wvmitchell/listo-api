@@ -86,21 +86,41 @@ func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, erro
 
 	checklists := []models.Checklist{}
 	for _, item := range output.Items {
-		collaborators := []string{}
-
-		for _, c := range item["Collaborators"].(*types.AttributeValueMemberL).Value {
-			collaborators = append(collaborators, c.(*types.AttributeValueMemberS).Value)
-		}
-
 		checklist := models.Checklist{
-			ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
-			Title:         item["Title"].(*types.AttributeValueMemberS).Value,
-			Locked:        item["Locked"].(*types.AttributeValueMemberBOOL).Value,
-			Collaborators: collaborators,
-			CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
-			UpdatedAt:     item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
+			ID:        strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
+			Title:     item["Title"].(*types.AttributeValueMemberS).Value,
+			Locked:    item["Locked"].(*types.AttributeValueMemberBOOL).Value,
+			CreatedAt: item["CreatedAt"].(*types.AttributeValueMemberS).Value,
+			UpdatedAt: item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 		}
 
+		checklists = append(checklists, checklist)
+	}
+
+	return checklists, nil
+}
+
+// GetSharedChecklists retrieves all checklists shared with a user.
+func (d *DynamoDBService) GetSharedChecklists(userID string) ([]models.Checklist, error) {
+	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("ChecklistCollaborators"),
+		KeyConditionExpression: aws.String("PK = :pk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query table, %v", err)
+	}
+
+	checklists := []models.Checklist{}
+	for _, item := range output.Items {
+		checklistID := strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1]
+		userID := item["OwnerID"].(*types.AttributeValueMemberS).Value
+		checklist, err := d.GetChecklist(userID, checklistID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get checklist, %v", err)
+		}
 		checklists = append(checklists, checklist)
 	}
 
@@ -127,18 +147,12 @@ func (d *DynamoDBService) GetChecklist(userID string, checklistID string) (model
 	}
 
 	item := output.Items[0]
-	collaborators := []string{}
-	for _, c := range item["Collaborators"].(*types.AttributeValueMemberL).Value {
-		collaborators = append(collaborators, c.(*types.AttributeValueMemberS).Value)
-	}
-
 	checklist := models.Checklist{
-		ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
-		Title:         item["Title"].(*types.AttributeValueMemberS).Value,
-		Locked:        item["Locked"].(*types.AttributeValueMemberBOOL).Value,
-		Collaborators: collaborators,
-		CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
-		UpdatedAt:     item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
+		ID:        strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
+		Title:     item["Title"].(*types.AttributeValueMemberS).Value,
+		Locked:    item["Locked"].(*types.AttributeValueMemberBOOL).Value,
+		CreatedAt: item["CreatedAt"].(*types.AttributeValueMemberS).Value,
+		UpdatedAt: item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 	}
 
 	return checklist, nil
@@ -186,22 +200,16 @@ func (d *DynamoDBService) GetChecklistItems(userID string, checklistID string) (
 
 // CreateChecklist creates a new checklist in the database.
 func (d *DynamoDBService) CreateChecklist(userID string, checklist *models.Checklist) error {
-	var collaborators []types.AttributeValue
-	for _, c := range checklist.Collaborators {
-		collaborators = append(collaborators, &types.AttributeValueMemberS{Value: c})
-	}
-
 	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String("Checklists"),
 		Item: map[string]types.AttributeValue{
-			"PK":            &types.AttributeValueMemberS{Value: "USER#" + userID},
-			"SK":            &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklist.ID},
-			"Entity":        &types.AttributeValueMemberS{Value: "CHECKLIST"},
-			"Title":         &types.AttributeValueMemberS{Value: checklist.Title},
-			"Locked":        &types.AttributeValueMemberBOOL{Value: checklist.Locked},
-			"Collaborators": &types.AttributeValueMemberL{Value: collaborators},
-			"CreatedAt":     &types.AttributeValueMemberS{Value: checklist.CreatedAt},
-			"UpdatedAt":     &types.AttributeValueMemberS{Value: checklist.UpdatedAt},
+			"PK":        &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"SK":        &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklist.ID},
+			"Entity":    &types.AttributeValueMemberS{Value: "CHECKLIST"},
+			"Title":     &types.AttributeValueMemberS{Value: checklist.Title},
+			"Locked":    &types.AttributeValueMemberBOOL{Value: checklist.Locked},
+			"CreatedAt": &types.AttributeValueMemberS{Value: checklist.CreatedAt},
+			"UpdatedAt": &types.AttributeValueMemberS{Value: checklist.UpdatedAt},
 		},
 	})
 
@@ -281,12 +289,98 @@ func (d *DynamoDBService) DeleteChecklist(userID string, checklistID string) err
 			"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
 		},
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to delete checklist, %v", err)
 	}
 
+	err = d.deleteChecklistCollaborators(userID, checklistID)
+	if err != nil {
+		return fmt.Errorf("failed to delete checklist collaborators, %v", err)
+	}
+
 	return nil
+}
+
+// deleteChecklistCollaborators deletes all collaborators for a checklist.
+// using the GSI to find all collaborators for a checklist.
+// userID is the owner of the checklist.
+func (d *DynamoDBService) deleteChecklistCollaborators(userID string, checklistID string) error {
+	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("ChecklistCollaborators"),
+		IndexName:              aws.String("GSI1"),
+		KeyConditionExpression: aws.String("GSI1PK = :pk AND GSI1SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			":sk": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to query table, %v", err)
+	}
+
+	if len(output.Items) > 0 {
+		var deleteRequests []types.WriteRequest
+
+		for _, item := range output.Items {
+			deleteRequests = append(deleteRequests, types.WriteRequest{
+				DeleteRequest: &types.DeleteRequest{
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: item["PK"].(*types.AttributeValueMemberS).Value},
+						"SK": &types.AttributeValueMemberS{Value: item["SK"].(*types.AttributeValueMemberS).Value},
+					},
+				},
+			})
+		}
+
+		_, err = d.Client.BatchWriteItem(context.TODO(), &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]types.WriteRequest{
+				"ChecklistCollaborators": deleteRequests,
+			},
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to delete checklist collaborators, %v", err)
+		}
+	}
+
+	return nil
+}
+
+// AddCollaborator adds a collaborator to a checklist.
+func (d *DynamoDBService) AddCollaborator(userID string, checklistID string, collaboratorID string) error {
+	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		TableName: aws.String("ChecklistCollaborators"),
+		Item: map[string]types.AttributeValue{
+			"PK":             &types.AttributeValueMemberS{Value: "USER#" + collaboratorID},
+			"SK":             &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+			"OwnerID":        &types.AttributeValueMemberS{Value: userID},
+			"GSI1PK":         &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"GSI1SK":         &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+			"CollaboratorID": &types.AttributeValueMemberS{Value: collaboratorID},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to put item, %v", err)
+	}
+
+	return nil
+}
+
+// GetChecklistOwner retrieves the owner of a checklist.
+func (d *DynamoDBService) GetChecklistOwner(userID string, checklistID string) (string, error) {
+	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("ChecklistCollaborators"),
+		KeyConditionExpression: aws.String("PK = :pk AND SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			":sk": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to query table, %v", err)
+	}
+
+	return output.Items[0]["OwnerID"].(*types.AttributeValueMemberS).Value, nil
 }
 
 // CreateChecklistItem creates a new item in a checklist.
@@ -304,10 +398,10 @@ func (d *DynamoDBService) CreateChecklistItem(userID string, checklistID string,
 			"UpdatedAt": &types.AttributeValueMemberS{Value: item.UpdatedAt},
 		},
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to put item, %v", err)
 	}
+
 	return nil
 }
 
@@ -329,7 +423,6 @@ func (d *DynamoDBService) UpdateChecklistItem(userID string, checklistID string,
 		UpdateExpression:    aws.String("SET Content = :content, Checked = :checked, Ordering = :ordering, UpdatedAt = :updatedAt"),
 		ReturnValues:        types.ReturnValueAllNew,
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to update item, %v", err)
 	}
@@ -338,6 +431,7 @@ func (d *DynamoDBService) UpdateChecklistItem(userID string, checklistID string,
 }
 
 // UpdateChecklistItems updates all items in a checklist.
+// currently only supports 100 total items, and is only for checking/unchecking all items.
 func (d *DynamoDBService) UpdateChecklistItems(userID string, checklistID string, checked bool) error {
 	items, err := d.GetChecklistItems(userID, checklistID)
 
@@ -348,8 +442,6 @@ func (d *DynamoDBService) UpdateChecklistItems(userID string, checklistID string
 	if len(items) == 0 {
 		return nil
 	}
-
-	// TODO: Batch in groups of 50, currently only supports 100 total items
 
 	transactItems := []types.TransactWriteItem{}
 
