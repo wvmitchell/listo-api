@@ -294,6 +294,56 @@ func (d *DynamoDBService) DeleteChecklist(userID string, checklistID string) err
 		return fmt.Errorf("failed to delete checklist, %v", err)
 	}
 
+	err = d.deleteChecklistCollaborators(userID, checklistID)
+	if err != nil {
+		return fmt.Errorf("failed to delete checklist collaborators, %v", err)
+	}
+
+	return nil
+}
+
+// deleteChecklistCollaborators deletes all collaborators for a checklist.
+// using the GSI to find all collaborators for a checklist.
+// userID is the owner of the checklist.
+func (d *DynamoDBService) deleteChecklistCollaborators(userID string, checklistID string) error {
+	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("ChecklistCollaborators"),
+		IndexName:              aws.String("GSI1"),
+		KeyConditionExpression: aws.String("GSI1PK = :pk AND GSI1SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			":sk": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to query table, %v", err)
+	}
+
+	if len(output.Items) > 0 {
+		var deleteRequests []types.WriteRequest
+
+		for _, item := range output.Items {
+			deleteRequests = append(deleteRequests, types.WriteRequest{
+				DeleteRequest: &types.DeleteRequest{
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: item["PK"].(*types.AttributeValueMemberS).Value},
+						"SK": &types.AttributeValueMemberS{Value: item["SK"].(*types.AttributeValueMemberS).Value},
+					},
+				},
+			})
+		}
+
+		_, err = d.Client.BatchWriteItem(context.TODO(), &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]types.WriteRequest{
+				"ChecklistCollaborators": deleteRequests,
+			},
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to delete checklist collaborators, %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -302,9 +352,12 @@ func (d *DynamoDBService) AddCollaborator(userID string, checklistID string, col
 	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String("ChecklistCollaborators"),
 		Item: map[string]types.AttributeValue{
-			"PK":      &types.AttributeValueMemberS{Value: "USER#" + collaboratorID},
-			"SK":      &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
-			"OwnerID": &types.AttributeValueMemberS{Value: userID},
+			"PK":             &types.AttributeValueMemberS{Value: "USER#" + collaboratorID},
+			"SK":             &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+			"OwnerID":        &types.AttributeValueMemberS{Value: userID},
+			"GSI1PK":         &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"GSI1SK":         &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+			"CollaboratorID": &types.AttributeValueMemberS{Value: collaboratorID},
 		},
 	})
 	if err != nil {

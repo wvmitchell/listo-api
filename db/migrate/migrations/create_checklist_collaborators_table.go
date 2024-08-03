@@ -31,10 +31,28 @@ func createChecklistCollaboratorsTableMigration(svc *dynamodb.Client) error {
 		AttributeDefinitions: []types.AttributeDefinition{
 			{AttributeName: aws.String("PK"), AttributeType: types.ScalarAttributeTypeS},
 			{AttributeName: aws.String("SK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("GSI1PK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("GSI1SK"), AttributeType: types.ScalarAttributeTypeS},
 		},
 		ProvisionedThroughput: &types.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(5),
-			WriteCapacityUnits: aws.Int64(5),
+			ReadCapacityUnits:  aws.Int64(50),
+			WriteCapacityUnits: aws.Int64(50),
+		},
+		GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+			{
+				IndexName: aws.String("GSI1"),
+				KeySchema: []types.KeySchemaElement{
+					{AttributeName: aws.String("GSI1PK"), KeyType: types.KeyTypeHash},
+					{AttributeName: aws.String("GSI1SK"), KeyType: types.KeyTypeRange},
+				},
+				ProvisionedThroughput: &types.ProvisionedThroughput{
+					ReadCapacityUnits:  aws.Int64(50),
+					WriteCapacityUnits: aws.Int64(50),
+				},
+				Projection: &types.Projection{
+					ProjectionType: types.ProjectionTypeAll,
+				},
+			},
 		},
 	})
 
@@ -42,6 +60,6 @@ func createChecklistCollaboratorsTableMigration(svc *dynamodb.Client) error {
 		return fmt.Errorf("Failed to create table, %v", err)
 	}
 
-	fmt.Println("Table ChecklistCollaborators created successfully")
+	fmt.Println("Table ChecklistCollaborators created successfully with GSI1")
 	return nil
 }
