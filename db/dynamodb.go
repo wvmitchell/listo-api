@@ -244,7 +244,6 @@ func (d *DynamoDBService) UpdateChecklist(userID string, checklistID string, che
 }
 
 // DeleteChecklist deletes a checklist and all associated items from the database, if unlocked.
-// TODO: if there are any collaborators, those will be removed from the ChecklistCollaborators table.
 func (d *DynamoDBService) DeleteChecklist(userID string, checklistID string) error {
 	checklist, err := d.GetChecklist(userID, checklistID)
 	if err != nil {
@@ -443,8 +442,6 @@ func (d *DynamoDBService) UpdateChecklistItems(userID string, checklistID string
 	if len(items) == 0 {
 		return nil
 	}
-
-	// TODO: Batch in groups of 50, currently only supports 100 total items
 
 	transactItems := []types.TransactWriteItem{}
 
