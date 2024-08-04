@@ -12,7 +12,7 @@ import (
 
 // RedisService is a struct that contains the Redis client.
 type RedisService struct {
-	Client *redis.Client
+	Client redis.UniversalClient
 }
 
 var ctx = context.Background()
@@ -23,17 +23,21 @@ func NewRedisService() (*RedisService, error) {
 	password := os.Getenv("REDIS_PASSWORD")
 	db, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
 	tlsConfig := &tls.Config{}
+	var rdb redis.UniversalClient
 
 	if addr == "localhost:6379" {
-		tlsConfig = nil // Disable TLS for local development
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     addr,
+			Password: password,
+			DB:       db,
+		})
+	} else {
+		rdb = redis.NewClusterClient(&redis.ClusterOptions{
+			Addrs:     []string{addr},
+			Password:  password,
+			TLSConfig: tlsConfig,
+		})
 	}
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:      addr,
-		Password:  password,
-		DB:        db,
-		TLSConfig: tlsConfig,
-	})
 
 	// Test connection
 	_, err := rdb.Ping(ctx).Result()
