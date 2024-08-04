@@ -3,12 +3,14 @@ package db
 
 import (
 	"context"
+	"crypto/tls"
 	"github.com/redis/go-redis/v9"
 	"os"
 	"strconv"
 	"time"
 )
 
+// RedisService is a struct that contains the Redis client.
 type RedisService struct {
 	Client *redis.Client
 }
@@ -20,16 +22,23 @@ func NewRedisService() (*RedisService, error) {
 	addr := os.Getenv("REDIS_URL")
 	password := os.Getenv("REDIS_PASSWORD")
 	db, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
+	tlsConfig := &tls.Config{}
+
+	if addr == "localhost:6379" {
+		tlsConfig = nil // Disable TLS for local development
+	}
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
-		DB:       db,
+		Addr:      addr,
+		Password:  password,
+		DB:        db,
+		TLSConfig: tlsConfig,
 	})
 
 	// Test connection
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
+		println("Error connecting to Redis: " + err.Error())
 		return nil, err
 	}
 
