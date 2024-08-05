@@ -366,6 +366,23 @@ func (d *DynamoDBService) AddCollaborator(userID string, checklistID string, col
 	return nil
 }
 
+// RemoveCollaborator removes a collaborator from a checklist.
+func (d *DynamoDBService) RemoveCollaborator(collaboratorID string, checklistID string) error {
+	_, err := d.Client.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
+		TableName: aws.String("ChecklistCollaborators"),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "USER#" + collaboratorID},
+			"SK": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete item, %v", err)
+	}
+
+	return nil
+}
+
 // GetChecklistOwner retrieves the owner of a checklist.
 func (d *DynamoDBService) GetChecklistOwner(userID string, checklistID string) (string, error) {
 	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
