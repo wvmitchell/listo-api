@@ -82,7 +82,7 @@ func GetSharedChecklists(c *gin.Context) {
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"shared checklists": checklists,
+			"checklists": checklists,
 		})
 	}
 }
@@ -309,6 +309,32 @@ func DeleteChecklist(c *gin.Context) {
 		} else {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "Checklist deleted",
+			})
+		}
+	}
+}
+
+// LeaveSharedChecklist handles the request to remove a user from a shared checklist.
+func LeaveSharedChecklist(c *gin.Context) {
+	userID := getUserID(c)
+	checklistID := c.Param("id")
+
+	service, err := db.NewDynamoDBService()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+	} else {
+		err := service.RemoveCollaborator(userID, checklistID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error leaving shared checklist: " + err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Left shared checklist",
 			})
 		}
 	}
