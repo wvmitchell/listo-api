@@ -561,12 +561,13 @@ func (d *DynamoDBService) createIntroductoryListoForUser(userID string) error {
 	firstListContent := []string{
 		"Edit the title of this Listo by clicking on the title. Your changes will be saved automatically.",
 		"Edit this item by clicking on it, making your changes, and clicking away, or <return>",
+		"You can make a multi-line item by pressing <shift> + <return>",
 		"Mark this item as done, by clicking on the checkbox",
 		"Reorder this item by dragging it somewhere else, and dropping it",
 		"Delete your checked items by selecting \"Delete Checked\" from the options dropdown",
 		"Add a new item to your Listo by clicking the + icon below all your items",
 		"Lock your Listo by selecting \"Lock\" from the options dropdown. You'll still be able to check/uncheck items, but can't change them. This is handy if you have checklists that you need to reuse.",
-		"Unlock your Listo by selecting \"Unlock\" from the options dropdown",
+		"Share your Listo with others by selecting \"Share\" from the options dropdown. You can share with anyone, even if they don't have an account yet.",
 		"Have fun!",
 	}
 
