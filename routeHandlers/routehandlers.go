@@ -31,24 +31,6 @@ func GetChecklists(c *gin.Context) {
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 	} else {
-
-		// Create user if they don't exist, which will also create their first checklist
-		user, err := service.GetUser(userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "Error getting user: " + err.Error(),
-			})
-			return
-		} else if user.ID == "" {
-			err = service.CreateUser(userID)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": "Error creating user: " + err.Error(),
-				})
-				return
-			}
-		}
-
 		// Get checklists for a user
 		checklists, err := service.GetChecklists(userID)
 		if err != nil {
