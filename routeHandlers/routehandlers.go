@@ -678,3 +678,54 @@ func DeleteSharedItem(c *gin.Context) {
 		})
 	}
 }
+
+// PostUser handles the request to create a new user.
+func PostUser(c *gin.Context) {
+	var user models.User
+	if err := c.BindJSON(&user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error parsing user info: " + err.Error(),
+		})
+		return
+	}
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	existingUser, err := service.GetUser(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error checking for user: " + err.Error(),
+		})
+		return
+	}
+
+	if existingUser.ID != "" {
+		err = service.UpdateUser(user.ID, user.Email, user.Picture)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error updating user: " + err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": "User updated",
+		})
+	} else {
+		err = service.CreateUser(user.ID, user.Email, user.Picture)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error creating user: " + err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": "User created",
+		})
+	}
+}
