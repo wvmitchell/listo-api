@@ -679,7 +679,7 @@ func DeleteSharedItem(c *gin.Context) {
 	}
 }
 
-// PostUser handles the request to create a new user.
+// PostUser handles the request to create a new user. It updates an existing user if the ID already exists.
 func PostUser(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {
