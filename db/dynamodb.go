@@ -537,11 +537,13 @@ func (d *DynamoDBService) GetUser(userID string) (models.User, error) {
 }
 
 // CreateUser creates a new user in the database.
-func (d *DynamoDBService) CreateUser(userID string) error {
+func (d *DynamoDBService) CreateUser(userID string, email string, picture string) error {
 	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String("Users"),
 		Item: map[string]types.AttributeValue{
-			"ID": &types.AttributeValueMemberS{Value: userID},
+			"ID":      &types.AttributeValueMemberS{Value: userID},
+			"Email":   &types.AttributeValueMemberS{Value: email},
+			"Picture": &types.AttributeValueMemberS{Value: picture},
 		},
 	})
 
@@ -553,6 +555,28 @@ func (d *DynamoDBService) CreateUser(userID string) error {
 
 	if err != nil {
 		return fmt.Errorf("failed to create introductory listo, %v", err)
+	}
+
+	return nil
+}
+
+// UpdateUser updates a user in the database.
+func (d *DynamoDBService) UpdateUser(userID string, email string, picture string) error {
+	_, err := d.Client.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+		TableName: aws.String("Users"),
+		Key: map[string]types.AttributeValue{
+			"ID": &types.AttributeValueMemberS{Value: userID},
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":email":   &types.AttributeValueMemberS{Value: email},
+			":picture": &types.AttributeValueMemberS{Value: picture},
+		},
+		ConditionExpression: aws.String("attribute_exists(ID)"),
+		UpdateExpression:    aws.String("SET Email = :email, Picture = :picture"),
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update user, %v", err)
 	}
 
 	return nil
