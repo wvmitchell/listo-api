@@ -23,5 +23,7 @@ type ChecklistItem struct {
 
 // User is a user of the application. Most info is actually stored in Auth0.
 type User struct {
-	ID string `json:"id"`
+	ID      string `json:"id"`
+	Email   string `json:"email"`
+	Picture string `json:"picture"`
 }
