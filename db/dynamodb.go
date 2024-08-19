@@ -86,12 +86,10 @@ func (d *DynamoDBService) GetChecklists(userID string) ([]models.Checklist, erro
 
 	checklists := []models.Checklist{}
 	for _, item := range output.Items {
-		checklist := models.Checklist{
-			ID:        strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
-			Title:     item["Title"].(*types.AttributeValueMemberS).Value,
-			Locked:    item["Locked"].(*types.AttributeValueMemberBOOL).Value,
-			CreatedAt: item["CreatedAt"].(*types.AttributeValueMemberS).Value,
-			UpdatedAt: item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
+		checklistID := strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1]
+		checklist, err := d.GetChecklist(userID, checklistID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get checklist, %v", err)
 		}
 
 		checklists = append(checklists, checklist)
@@ -146,13 +144,19 @@ func (d *DynamoDBService) GetChecklist(userID string, checklistID string) (model
 		return models.Checklist{}, nil
 	}
 
+	collaborators, err := d.GetChecklistCollaborators(userID, checklistID)
+	if err != nil {
+		return models.Checklist{}, fmt.Errorf("failed to get checklist collaborators, %v", err)
+	}
+
 	item := output.Items[0]
 	checklist := models.Checklist{
-		ID:        strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
-		Title:     item["Title"].(*types.AttributeValueMemberS).Value,
-		Locked:    item["Locked"].(*types.AttributeValueMemberBOOL).Value,
-		CreatedAt: item["CreatedAt"].(*types.AttributeValueMemberS).Value,
-		UpdatedAt: item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
+		ID:            strings.Split(item["SK"].(*types.AttributeValueMemberS).Value, "#")[1],
+		Title:         item["Title"].(*types.AttributeValueMemberS).Value,
+		Locked:        item["Locked"].(*types.AttributeValueMemberBOOL).Value,
+		Collaborators: collaborators,
+		CreatedAt:     item["CreatedAt"].(*types.AttributeValueMemberS).Value,
+		UpdatedAt:     item["UpdatedAt"].(*types.AttributeValueMemberS).Value,
 	}
 
 	return checklist, nil
@@ -383,6 +387,49 @@ func (d *DynamoDBService) RemoveCollaborator(collaboratorID string, checklistID 
 	return nil
 }
 
+// GetChecklistCollaborators retrieves all collaborators for a checklist
+func (d *DynamoDBService) GetChecklistCollaborators(userID string, checklistID string) ([]models.Collaborator, error) {
+	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("ChecklistCollaborators"),
+		IndexName:              aws.String("GSI1"),
+		KeyConditionExpression: aws.String("GSI1PK = :pk AND GSI1SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			":sk": &types.AttributeValueMemberS{Value: "CHECKLIST#" + checklistID},
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query table, %v", err)
+	}
+
+	collaborators := []models.Collaborator{}
+	for _, item := range output.Items {
+		collaboratorID := strings.Split(item["PK"].(*types.AttributeValueMemberS).Value, "#")[1]
+		user, err := d.GetUser(collaboratorID)
+		collaborator := models.Collaborator{
+			Email:   user.Email,
+			Picture: user.Picture,
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user, %v", err)
+		}
+		collaborators = append(collaborators, collaborator)
+	}
+	owner, err := d.GetUser(userID)
+	ownerCollaborator := models.Collaborator{
+		Email:   owner.Email,
+		Picture: owner.Picture,
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user, %v", err)
+	}
+
+	collaborators = append(collaborators, ownerCollaborator)
+
+	return collaborators, nil
+}
+
 // GetChecklistOwner retrieves the owner of a checklist.
 func (d *DynamoDBService) GetChecklistOwner(userID string, checklistID string) (string, error) {
 	output, err := d.Client.Query(context.TODO(), &dynamodb.QueryInput{
@@ -537,11 +584,13 @@ func (d *DynamoDBService) GetUser(userID string) (models.User, error) {
 }
 
 // CreateUser creates a new user in the database.
-func (d *DynamoDBService) CreateUser(userID string) error {
+func (d *DynamoDBService) CreateUser(userID string, email string, picture string) error {
 	_, err := d.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String("Users"),
 		Item: map[string]types.AttributeValue{
-			"ID": &types.AttributeValueMemberS{Value: userID},
+			"ID":      &types.AttributeValueMemberS{Value: userID},
+			"Email":   &types.AttributeValueMemberS{Value: email},
+			"Picture": &types.AttributeValueMemberS{Value: picture},
 		},
 	})
 
@@ -553,6 +602,28 @@ func (d *DynamoDBService) CreateUser(userID string) error {
 
 	if err != nil {
 		return fmt.Errorf("failed to create introductory listo, %v", err)
+	}
+
+	return nil
+}
+
+// UpdateUser updates a user in the database.
+func (d *DynamoDBService) UpdateUser(userID string, email string, picture string) error {
+	_, err := d.Client.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+		TableName: aws.String("Users"),
+		Key: map[string]types.AttributeValue{
+			"ID": &types.AttributeValueMemberS{Value: userID},
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":email":   &types.AttributeValueMemberS{Value: email},
+			":picture": &types.AttributeValueMemberS{Value: picture},
+		},
+		ConditionExpression: aws.String("attribute_exists(ID)"),
+		UpdateExpression:    aws.String("SET Email = :email, Picture = :picture"),
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update user, %v", err)
 	}
 
 	return nil

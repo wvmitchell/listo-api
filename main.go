@@ -65,6 +65,9 @@ func main() {
 	r.PUT("/checklist/:id/shared/item/:itemID", routehandlers.PutSharedItem)
 	r.DELETE("/checklist/:id/shared/item/:itemID", routehandlers.DeleteSharedItem)
 
+	// Users
+	r.POST("/user", routehandlers.PostUser)
+
 	err = r.Run(":80")
 
 	if err != nil {

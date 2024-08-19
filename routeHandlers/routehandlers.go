@@ -31,24 +31,6 @@ func GetChecklists(c *gin.Context) {
 			"message": "Error setting up DynamoDBService: " + err.Error(),
 		})
 	} else {
-
-		// Create user if they don't exist, which will also create their first checklist
-		user, err := service.GetUser(userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "Error getting user: " + err.Error(),
-			})
-			return
-		} else if user.ID == "" {
-			err = service.CreateUser(userID)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": "Error creating user: " + err.Error(),
-				})
-				return
-			}
-		}
-
 		// Get checklists for a user
 		checklists, err := service.GetChecklists(userID)
 		if err != nil {
@@ -693,6 +675,57 @@ func DeleteSharedItem(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Item deleted",
+		})
+	}
+}
+
+// PostUser handles the request to create a new user. It updates an existing user if the ID already exists.
+func PostUser(c *gin.Context) {
+	var user models.User
+	if err := c.BindJSON(&user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error parsing user info: " + err.Error(),
+		})
+		return
+	}
+
+	service, err := db.NewDynamoDBService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error setting up DynamoDBService: " + err.Error(),
+		})
+		return
+	}
+
+	existingUser, err := service.GetUser(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error checking for user: " + err.Error(),
+		})
+		return
+	}
+
+	if existingUser.ID != "" {
+		err = service.UpdateUser(user.ID, user.Email, user.Picture)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error updating user: " + err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": "User updated",
+		})
+	} else {
+		err = service.CreateUser(user.ID, user.Email, user.Picture)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error creating user: " + err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": "User created",
 		})
 	}
 }
